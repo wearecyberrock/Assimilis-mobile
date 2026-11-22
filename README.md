@@ -1,5 +1,9 @@
 # Assimilis Mobile
 
+An Android app anyone can use: talk to **A** (Assimilis) hands-free, take notes and do maths in Canvas, level up your life with HES, set reminders, read the web, run AI models on your phone (or pool phones and PCs for bigger ones), and let A use your phone for you. First launch walks you through setup: your name, a brain (free OpenRouter key, a local model, ChatGPT, or your own Assimilis server) and permissions.
+
+**Get it without building:** every push to `main` builds an APK in GitHub Actions (Actions tab → latest green run → `assimilis-mobile-apk`).
+
 One Android app that combines **PrivateLM** (cross-platform-llm-client), **PocketStrike** and **PrivateAgent**
 (private-agent). Everything runs on the phone: local models, plus cloud models if you add API keys. There is
 no server.
@@ -11,9 +15,7 @@ When you open the app you land on the **Assimilis hub**, with four areas:
 | **Chat & Models** | PrivateLM | Chat with local GGUF models (llama.cpp), generate images on the phone (Stable Diffusion), run LiteRT models, and use cloud models (OpenAI, Claude, Gemini, Kimi) with your keys. Also handles model downloads, vision and documents. |
 | **Workstation** | PocketStrike | ReAct agent with tools, MCP servers, Hermes memory (USER / MEMORY / SOUL), file tools, more providers (OpenAI, Claude, Gemini, DeepSeek, Ollama), its own local models and image generation. |
 | **Phone Agent** | PrivateAgent | Tell it a task and it uses your phone: reads the screen, taps, types, scrolls, opens apps. It also has voice commands and a floating bubble. |
-| **Jarvis** | new | Hands-free voice mode in the Jarvis voice (Edge en-GB Ryan). Sets alarms and reminders, writes notes, logs HES, checks UWI, reads the web and runs phone tasks. Set its brain in the ⚙ sheet (an OpenRouter key works), or it uses your local model. |
 | **Canvas** | Assimilis Notes | Notebooks > sections > pages, LaTeX maths, calculator, graphs, derivatives and integrals, plus an infinite canvas with cards, connectors and ink. |
-| **UWI · Academic** | uwi-academic | Mona VLE courses, deadlines and announcements; turns deadlines into reminders. |
 | **HES** | organelle/hes | Stats E→SSS+, level, class, daily quests, trackers, quick log. |
 | **Alarms & Reminders** | new | Alarms, timers, and repeating reminders. |
 | **Agent Reach** | components/agent-reach | Read-only web search and readers. |

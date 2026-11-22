@@ -9,7 +9,10 @@ import 'package:assimilis_mobile/assimilis/canvas/page_editor.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_store.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_view.dart';
 import 'package:assimilis_mobile/assimilis/links/links_view.dart';
-import 'package:assimilis_mobile/assimilis/uwi/uwi_view.dart';
+import 'package:assimilis_mobile/assimilis/reach/reach_view.dart';
+import 'package:assimilis_mobile/assimilis/reminders_view.dart';
+import 'package:assimilis_mobile/hub/permissions_view.dart';
+import 'package:assimilis_mobile/hub/welcome_view.dart';
 import 'package:assimilis_mobile/assimilis/voice/voice_mode_view.dart';
 import 'package:assimilis_mobile/hub/brand.dart';
 import 'package:assimilis_mobile/hub/core_orb.dart';
@@ -66,25 +69,11 @@ Map<String, Object> _prefs() {
   final now = DateTime.now();
   String at(int h) => now.add(Duration(hours: h)).toIso8601String();
   return {
-    'asm_uwi_user': '620150000',
-    'asm_blob_uwi': jsonEncode({
-      'synced': now.toIso8601String(),
-      'courses': [
-        {'id': 1, 'code': 'COMP2201', 'name': 'Discrete Mathematics for Computer Science', 'url': 'https://vle.mona.uwi.edu'},
-        {'id': 2, 'code': 'COMP2140', 'name': 'Software Engineering', 'url': 'https://vle.mona.uwi.edu'},
-        {'id': 3, 'code': 'MATH2401', 'name': 'Elements of Mathematical Analysis', 'url': 'https://vle.mona.uwi.edu'},
-      ],
-      'deadlines': [
-        {'id': 1, 'name': 'Assignment 2: Graph proofs', 'type': 'assign', 'course': 'COMP2201', 'at': at(20)},
-        {'id': 2, 'name': 'Quiz 4', 'type': 'quiz', 'course': 'MATH2401', 'at': at(52)},
-        {'id': 3, 'name': 'Sprint 3 report', 'type': 'assign', 'course': 'COMP2140', 'at': at(130)},
-      ],
-      'announcements': [
-        {'course': 'COMP2201', 'title': 'Tutorial moved to Thursday', 'author': 'Dr. Brown', 'url': 'https://vle.mona.uwi.edu'},
-      ],
-    }),
+    'asm_onboarded': true,
+    'asm_user_name': 'Sam',
     'asm_blob_reminders': jsonEncode([
-      {'id': 7, 'title': 'COMP2201: Assignment 2 is due', 'at': at(3), 'repeat': 'none', 'source': 'uwi'},
+      {'id': 7, 'title': 'Submit the lab report', 'at': at(3), 'repeat': 'none', 'source': 'you'},
+      {'id': 8, 'title': 'Gym', 'at': at(20), 'repeat': 'weekdays', 'source': 'you'},
     ]),
     'asm_blob_hermes_url': 'http://100.64.0.7:8787',
   };
@@ -146,7 +135,10 @@ void main() {
     });
     await _shot(t, Theme(data: AssimilisBrand.theme(), child: PageEditor(page: page)), '05_canvas_page');
   });
-  testWidgets('uwi', (t) => _shot(t, const UwiView(), '06_uwi'));
+  testWidgets('reminders', (t) => _shot(t, const RemindersView(), '06_reminders'));
+  testWidgets('reach', (t) => _shot(t, const ReachView(), '08_reach'));
+  testWidgets('safety', (t) => _shot(t, const PermissionsView(), '09_safety'));
+  testWidgets('welcome', (t) => _shot(t, const WelcomeView(), '00_welcome'));
   testWidgets('links', (t) => _shot(t, const LinksView(), '07_models_links'));
 
   testWidgets('app icon', (t) async {

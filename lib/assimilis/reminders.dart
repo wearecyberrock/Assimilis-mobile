@@ -15,7 +15,7 @@ class Reminder {
   final String title;
   final DateTime at;
   final String repeat; // none | daily | weekly | weekdays
-  final String source; // you | jarvis | uwi | hes
+  final String source; // you | jarvis | hes
   Reminder({required this.id, required this.title, required this.at, this.repeat = 'none', this.source = 'you'});
 
   Map<String, dynamic> toJson() =>

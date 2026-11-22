@@ -39,7 +39,7 @@ class NotesStore {
   }
 
   Future<void> _seed() async {
-    final b = await addBook('School', color: 0xFF3D8C6E);
+    final b = await addBook('School', color: 0xFFA855F7);
     final s = await addSection(b['id'], 'Maths');
     await addPage(b['id'], s['id'], 'Getting started',
         text: '# Welcome to Canvas\n\nWrite notes with **markdown** and maths like \$E = mc^2\$ or a block:\n\n'
@@ -50,7 +50,7 @@ class NotesStore {
 
   List<Map<String, dynamic>> get books => List<Map<String, dynamic>>.from(vault['books'] ?? const []);
 
-  Future<Map<String, dynamic>> addBook(String name, {int color = 0xFF3D8C6E}) async {
+  Future<Map<String, dynamic>> addBook(String name, {int color = 0xFFA855F7}) async {
     final b = {'id': newId('book'), 'name': name, 'color': color, 'sections': <Map<String, dynamic>>[]};
     (vault['books'] as List).add(b);
     await save();

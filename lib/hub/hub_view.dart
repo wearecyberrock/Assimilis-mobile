@@ -8,8 +8,6 @@ import '../assimilis/links/links_view.dart';
 import '../assimilis/reach/reach_view.dart';
 import '../assimilis/reminders.dart';
 import '../assimilis/reminders_view.dart';
-import '../assimilis/uwi/uwi_client.dart';
-import '../assimilis/uwi/uwi_view.dart';
 import '../assimilis/voice/voice_mode_view.dart';
 import '../core/routes.dart';
 import '../phone_agent/private_agent_main.dart' show PrivateAgentApp;
@@ -19,6 +17,8 @@ import 'brand.dart';
 import 'core_view.dart';
 import 'hud.dart';
 import 'permissions_view.dart';
+import 'welcome_view.dart';
+import '../assimilis/settings.dart';
 
 /// Whether the Phone Agent's own onboarding is finished (set in main.dart).
 bool phoneAgentOnboarded = false;
@@ -32,11 +32,20 @@ class HubView extends StatefulWidget {
 
 class _HubViewState extends State<HubView> {
   final _core = GlobalKey<CoreViewState>();
-  String _rank = '–', _level = '–', _reminder = 'None set', _deadline = 'Sign in to UWI';
+  String _rank = '–', _level = '–', _reminder = 'None set', _quests = 'No quests yet';
 
   @override
   void initState() {
     super.initState();
+    _status();
+    _firstRun();
+  }
+
+  Future<void> _firstRun() async {
+    final s = await AssimilisSettings.get();
+    if (s.onboarded || !mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, builder: (_) => const WelcomeView()));
+    _core.currentState?.refreshGraph();
     _status();
   }
 
@@ -51,13 +60,9 @@ class _HubViewState extends State<HubView> {
       if (r.isNotEmpty) _reminder = '${r.first.title} · ${_when(r.first.at)}';
     } catch (_) {}
     try {
-      final u = await UwiClient.cached();
-      final d = List<Map>.from(u?['deadlines'] ?? const [])
-          .where((e) => DateTime.tryParse('${e['at']}')?.isAfter(DateTime.now()) ?? false)
-          .toList()
-        ..sort((a, b) => '${a['at']}'.compareTo('${b['at']}'));
-      if (d.isNotEmpty) _deadline = '${d.first['course']} · ${_when(DateTime.parse('${d.first['at']}'))}';
-      else if (u != null) _deadline = 'Nothing due';
+      final q = await HesStore.instance.quests();
+      final done = q.where((x) => x['claimed'] == true).length;
+      if (q.isNotEmpty) _quests = 'Quests $done / ${q.length} today';
     } catch (_) {}
     if (mounted) setState(() {});
   }
@@ -112,7 +117,7 @@ class _HubViewState extends State<HubView> {
                       const SizedBox(height: 6),
                       _line(Icons.notifications_active_outlined, _reminder),
                       const SizedBox(height: 3),
-                      _line(Icons.school_outlined, _deadline),
+                      _line(Icons.flag_outlined, _quests),
                     ]),
                   ),
                 ]),
@@ -128,10 +133,10 @@ class _HubViewState extends State<HubView> {
                 children: [
                   _tile(Icons.graphic_eq_rounded, 'Talk to A', 'Talk hands-free', AssimilisBrand.magenta, const VoiceModeView()),
                   _tile(Icons.draw_rounded, 'Canvas', 'Notes · maths · ink', AssimilisBrand.violet, const CanvasView()),
-                  _tile(Icons.school_rounded, 'UWI', 'Courses · deadlines', AssimilisBrand.green, const UwiView()),
                   _tile(Icons.military_tech_rounded, 'HES', 'Stats · quests', const Color(0xFFFFB300), const HesView()),
                   _tile(Icons.alarm_rounded, 'Reminders', 'Alarms · timers', AssimilisBrand.red, const RemindersView()),
                   _tile(Icons.travel_explore_rounded, 'Reach', 'Web · GitHub · YouTube', const Color(0xFF26C6DA), const ReachView()),
+                  _tile(Icons.psychology_alt_rounded, 'Brains', 'Models · keys · links', AssimilisBrand.green, const LinksView()),
                 ],
               ),
               const HudHeader('Agents'),
@@ -142,7 +147,6 @@ class _HubViewState extends State<HubView> {
                   () => _go(PrivateAgentApp(onboardingCompleted: phoneAgentOnboarded))),
               const HudHeader('System'),
               _row(Icons.memory_rounded, 'Devices & RAM', 'Pool phones and laptops to run bigger models', () => _go(const ClusterView())),
-              _row(Icons.link_rounded, 'Models & Links', 'Shared models, Hermes on laptop/VPS, ChatGPT sign-in', () => _go(const LinksView())),
               _row(Icons.verified_user_outlined, 'Safety & Permissions', 'Ask me / Full allow, Android permissions', () => _go(const PermissionsView())),
             ]),
           ),

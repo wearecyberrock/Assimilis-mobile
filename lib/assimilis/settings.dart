@@ -1,8 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Settings for the Assimilis core (Jarvis, voice mode, Canvas, HES, UWI, Agent Reach).
-/// API keys and the UWI password live in the Android keystore (flutter_secure_storage);
+/// Settings for the Assimilis core (A, voice mode, Canvas, HES, Agent Reach).
+/// API keys live in the Android keystore (flutter_secure_storage);
 /// everything else in shared preferences.
 class AssimilisSettings {
   AssimilisSettings._(this._prefs);
@@ -44,11 +44,13 @@ class AssimilisSettings {
   bool get continuous => _prefs.getBool('asm_continuous') ?? true;
   set continuous(bool v) => _prefs.setBool('asm_continuous', v);
 
-  // ---- UWI
-  String get uwiUser => _prefs.getString('asm_uwi_user') ?? '';
-  set uwiUser(String v) => _prefs.setString('asm_uwi_user', v.trim());
-  Future<String> uwiPassword() async => await _secure.read(key: 'asm_uwi_pw') ?? '';
-  Future<void> setUwiPassword(String v) => _secure.write(key: 'asm_uwi_pw', value: v);
+  // ---- You
+  static String get cachedName => _i?.userName ?? '';
+  /// The name A uses for you (set in first-run setup).
+  String get userName => _prefs.getString('asm_user_name') ?? '';
+  set userName(String v) => _prefs.setString('asm_user_name', v.trim());
+  bool get onboarded => _prefs.getBool('asm_onboarded') ?? false;
+  set onboarded(bool v) => _prefs.setBool('asm_onboarded', v);
 
   // ---- Generic JSON blobs for the on-device stores
   String? blob(String key) => _prefs.getString('asm_blob_$key');

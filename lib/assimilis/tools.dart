@@ -8,7 +8,6 @@ import 'canvas/notes_store.dart';
 import 'hes/hes_store.dart';
 import 'reach/agent_reach.dart';
 import 'reminders.dart';
-import 'uwi/uwi_client.dart';
 
 /// Tools the Assimilis brain (Jarvis) can call. OpenAI function-calling schemas + handlers.
 class AssimilisTools {
@@ -42,9 +41,6 @@ class AssimilisTools {
     _fn('hes_log', 'Log a HES activity in plain words, e.g. "30 pushups", "studied 45 min", "slept 7 h".', {'text': _s}, ['text']),
     _fn('hes_status', 'HES level, rank, class, power, XP, coins and open quests.', {}),
     _fn('hes_quests', 'Today\'s HES quests with progress.', {}),
-    _fn('uwi_deadlines', 'Upcoming UWI (Mona VLE) assignment and quiz deadlines. sync=true refreshes from the VLE.', {'sync': {'type': 'boolean'}}),
-    _fn('uwi_courses', 'The owner\'s current UWI courses.', {}),
-    _fn('uwi_announcements', 'Recent UWI course announcements.', {}),
     _fn('web_search', 'Search the web (Agent Reach / Exa).', {'query': _s}, ['query']),
     _fn('read_url', 'Read a web page, GitHub repo, YouTube video (captions) or Reddit thread as text.', {'url': _s}, ['url']),
     _fn('github', 'GitHub repo info + README ("owner/repo") or a repo search.', {'query': _s}, ['query']),
@@ -62,7 +58,6 @@ class AssimilisTools {
         'search_notes' || 'read_note' => 'Checking your notes…',
         'calculate' || 'derivative' || 'integral' => 'Calculating…',
         'hes_log' || 'hes_status' || 'hes_quests' => 'Updating HES…',
-        'uwi_deadlines' || 'uwi_courses' || 'uwi_announcements' => 'Checking the VLE…',
         'web_search' => 'Searching the web…',
         'read_url' || 'github' || 'reddit' || 'rss' => 'Reading…',
         'phone_task' => 'Working on your phone…',
@@ -135,17 +130,6 @@ class AssimilisTools {
         case 'hes_quests':
           final q = await HesStore.instance.quests();
           return q.map((x) => '${x['claimed'] == true ? '✔' : '•'} ${x['title']} (${x['done']}/${x['target']})').join('\n');
-        case 'uwi_deadlines':
-          final snap = a['sync'] == true ? await UwiClient.instance.sync() : await UwiClient.cached() ?? await UwiClient.instance.sync();
-          final list = List<Map>.from(snap['deadlines'] ?? const [])..sort((x, y) => '${x['at']}'.compareTo('${y['at']}'));
-          return list.isEmpty ? 'No upcoming deadlines.' : list.map((d) => '${d['course']}: ${d['name']} due ${d['at']}').join('\n');
-        case 'uwi_courses':
-          final snap = await UwiClient.cached() ?? await UwiClient.instance.sync();
-          return (snap['courses'] as List).map((c) => '${c['code']}: ${c['name']}').join('\n');
-        case 'uwi_announcements':
-          final snap = await UwiClient.cached() ?? await UwiClient.instance.sync();
-          final list = List<Map>.from(snap['announcements'] ?? const []);
-          return list.isEmpty ? 'No announcements.' : list.map((x) => '${x['course']}: ${x['title']} (${x['author']})').join('\n');
         case 'web_search':
           return await AgentReach.search('${a['query']}');
         case 'read_url':

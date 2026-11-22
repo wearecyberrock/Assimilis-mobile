@@ -8,11 +8,10 @@ import 'links/shared_providers.dart';
 import 'models/shared_library.dart';
 import 'reminders.dart';
 import 'tools.dart';
-import 'uwi/uwi_client.dart';
 
 /// Builds the graph the web Core draws (assimilis-core.js `setGraph`) from what is on this phone:
-/// promises = reminders and UWI deadlines, AI brains = linked brains and local models, memory = HES stats,
-/// tools = A's tools, business records = UWI courses, canvas = Canvas pages, server = Hermes and nodes.
+/// promises = reminders and HES quests, AI brains = linked brains and local models, memory = HES stats,
+/// tools = A's tools, records = HES trackers, canvas = Canvas pages, server = Hermes and nodes.
 class CoreGraph {
   static Future<Map<String, dynamic>> build() async {
     final rings = <String, List<Map<String, String>>>{
@@ -34,12 +33,12 @@ class CoreGraph {
       }
     } catch (_) {}
     try {
-      final u = await UwiClient.cached();
-      for (final d in List<Map>.from(u?['deadlines'] ?? const [])) {
-        add('promises', 'due-${d['id']}', '${d['course']}: ${d['name']}', 'UWI deadlines');
+      final hes = HesStore.instance;
+      for (final q in await hes.quests()) {
+        add('promises', 'quest-${q['key']}', '${q['title']}', 'HES quests');
       }
-      for (final c in List<Map>.from(u?['courses'] ?? const [])) {
-        add('records', 'course-${c['id']}', '${c['code']}', 'UWI courses');
+      for (final id in hes.activeModules) {
+        add('records', 'mod-$id', '${hes.data?.modules[id]?['name'] ?? id}', 'Trackers');
       }
     } catch (_) {}
 
@@ -70,9 +69,7 @@ class CoreGraph {
       final name = '${(t['function'] as Map)['name']}';
       final group = name.startsWith('hes')
           ? 'HES'
-          : name.startsWith('uwi')
-              ? 'UWI'
-              : RegExp(r'note|calc|deriv|integ').hasMatch(name)
+          : RegExp(r'note|calc|deriv|integ').hasMatch(name)
                   ? 'Canvas'
                   : RegExp(r'alarm|timer|remind').hasMatch(name)
                       ? 'Time'

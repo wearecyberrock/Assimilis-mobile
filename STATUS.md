@@ -4,6 +4,12 @@
 The local build crashed because this PC ran out of RAM (7.8 GB) and disk. Nothing has been run on a phone. Until
 an APK is built and installed, everything under "Merged in" is "should work", not "tested".
 
+## For everyone (2026-11-22)
+
+* UWI / Mona VLE removed: it was personal to the owner.
+* First-run setup (name, brain, permissions) so anyone can install and use it; A uses your name.
+* Every Assimilis screen in the HES style (HUD title bar, corner-bracket panels).
+
 ## Redesign and links (2026-11-22, built but not yet tried on a phone)
 
 | Feature | What it does | Caveats |
@@ -26,7 +32,6 @@ an APK is built and installed, everything under "Merged in" is "should work", no
 | **Jarvis voice mode** | Hands-free listen → think → speak loop with "On it." beats and an arc-reactor screen. Voice is Edge `en-GB-RyanNeural` (rate -6%, pitch -3Hz) called straight from the phone, with the phone's British voice offline. The Phone Agent speaks as Jarvis too. | The Edge handshake (`Sec-MS-GEC`) is reimplemented from the `edge-tts` protocol. If Microsoft changes it, the app falls back to the phone voice. |
 | **Brain + tools** | Any OpenAI-compatible model (OpenRouter by default) with 26 tools: alarms, reminders, notes, maths, HES, UWI, Agent Reach, phone_task. With no key, it uses the local GGUF from Chat & Models, plus offline shortcuts (timers, alarms, sums, HES logs). | Free models that refuse tool calls get one retry without tools. |
 | **Canvas** | Book > section > page with `book-`/`sec-`/`page-`/`node-`/`conn-` IDs. Page mode: markdown, `$LaTeX$`, and `prompt(math\|graph\|derive\|integrate, …)` blocks. Canvas mode: 0.2–3× pan/zoom, cards, Bezier connectors, ink. | Only notes, maths and school. No business objects, no sync with web Notes. |
-| **UWI · Academic** | Mona VLE login (same flow as `components/uwi-academic`), courses, deadlines, announcements. A deadline becomes reminders 1 day and 3 hours before, and a course becomes a Canvas notebook. | Read-only. If the VLE asks for a CAPTCHA, MFA or a password change, it stops and tells you. No material downloads or quiz generator yet. |
 | **HES** | `engine.py` ported to Dart (same ranks E→Monarch, caps, decay, XP curve), the server's tree, classes, abilities and 31 modules. Daily quests (+20 XP, +10 coins), trackers, quick log. | No questionnaire onboarding (stats start at 10), no Gmail money, no abilities shop UI. |
 | **Alarms & Reminders** | Clock-app alarms and timers, and reminders (once, daily, weekdays, weekly) at exact times. Reminders survive a reboot. | |
 | **Agent Reach** | Exa search, Jina page reader, GitHub, Reddit, YouTube captions and RSS. Results can be saved to Canvas. | Read-only. No Twitter/X, Instagram, LinkedIn or Chinese sites (those need logins or yt-dlp). |
