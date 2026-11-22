@@ -6,10 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../assimilis/core_graph.dart';
-import 'core_orb.dart';
+import 'core_orb.dart' show CoreMood;
+
+/// A still frame of the real web Core (rendered from assets/core), shown while the live one loads
+/// and wherever a WebView cannot run.
+Widget coreStill(double size) => Image.asset('assets/core/core_still.png', width: size, height: size, fit: BoxFit.cover);
 
 /// The real Assimilis Core from the web UI (assets/core: assimilis-core.js + assimilis-eye.js, unchanged),
-/// running in a small transparent WebView. Off Android/iOS (tests, screenshots) it falls back to [CoreOrb].
+/// running in a small transparent WebView. Off Android/iOS (tests, screenshots) it shows a still of the same core.
 class CoreView extends StatefulWidget {
   final double size;
   final CoreMood mood;
@@ -50,6 +54,7 @@ class CoreViewState extends State<CoreView> {
           final d = jsonDecode(m.message);
           if (d['ready'] == true) {
             _ready = true;
+            if (mounted) setState(() {});
             _push();
             refreshGraph();
           }
@@ -86,8 +91,18 @@ class CoreViewState extends State<CoreView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_c == null) return CoreOrb(size: widget.size, mood: widget.mood, level: widget.level);
+    if (_c == null) return ClipOval(child: coreStill(widget.size));
     // Taps go to the Flutter screen (tap the core to talk); the core itself is shown, not dragged.
-    return SizedBox.square(dimension: widget.size, child: IgnorePointer(child: WebViewWidget(controller: _c!)));
+    return SizedBox.square(
+      dimension: widget.size,
+      child: Stack(fit: StackFit.expand, children: [
+        ClipOval(child: coreStill(widget.size)),
+        AnimatedOpacity(
+          opacity: _ready ? 1 : 0,
+          duration: const Duration(milliseconds: 400),
+          child: IgnorePointer(child: WebViewWidget(controller: _c!)),
+        ),
+      ]),
+    );
   }
 }
