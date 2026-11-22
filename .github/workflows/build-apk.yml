@@ -3,6 +3,8 @@ name: Build Assimilis Mobile APK
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -27,11 +29,41 @@ jobs:
           sudo apt-get install -y glslc
           sudo ln -sf "$(command -v glslc)" /usr/local/bin/glslc
           glslc --version
+      - name: Configure release keystore (if secrets are provided)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            KEYSTORE_PATH="$GITHUB_WORKSPACE/android/release-keystore.jks"
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+            cat > android/key.properties <<EOF
+          storeFile=$KEYSTORE_PATH
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+            echo "Configured persistent release keystore."
+          else
+            echo "No release keystore secrets set; falling back to debug signing."
+          fi
       - run: flutter pub get
-      - name: Build release APK (arm64, debug-signed for personal install)
+      - name: Build release APK (arm64)
         env:
           ASSIMILIS_ALLOW_DEBUG_RELEASE_SIGNING: "true"
         run: flutter build apk --release --target-platform android-arm64
+      - name: Verify APK signature and ABIs
+        run: |
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          APKSIGNER="$(ls -1 "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/*/apksigner | sort -V | tail -n 1)"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          if unzip -Z1 "$APK" | grep -E '^lib/(armeabi|x86)'; then
+            echo "ERROR: unexpected non-arm64 native libraries found in APK"
+            exit 1
+          fi
+          ls -lh "$APK"
       - uses: actions/upload-artifact@v4
         with:
           name: assimilis-mobile-apk
