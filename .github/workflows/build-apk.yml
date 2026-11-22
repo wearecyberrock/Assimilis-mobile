@@ -28,10 +28,34 @@ jobs:
           sudo ln -sf "$(command -v glslc)" /usr/local/bin/glslc
           glslc --version
       - run: flutter pub get
-      - name: Build release APK (arm64, debug-signed for personal install)
+      - name: Release signing (permanent key from repository secrets)
+        # With the secrets set, every build is signed with the same key, so updates install over the old app.
+        # Without them, the build falls back to a throwaway debug key (uninstall needed between builds).
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: building with a throwaway debug key."
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > android/key.properties
+          echo "Signing with the permanent release key."
+      - name: Build release APK (arm64)
         env:
           ASSIMILIS_ALLOW_DEBUG_RELEASE_SIGNING: "true"
         run: flutter build apk --release --target-platform android-arm64
+      - name: Remove signing files
+        if: always()
+        run: rm -f android/key.properties "$RUNNER_TEMP/release.jks"
       - uses: actions/upload-artifact@v4
         with:
           name: assimilis-mobile-apk

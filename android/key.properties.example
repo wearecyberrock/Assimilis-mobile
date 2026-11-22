@@ -1,6 +1,6 @@
-# Copy this file to android/key.properties and keep the real values private.
-# Every published update must use the same keystore and alias.
-storeFile=/absolute/path/to/privatelm-release.jks
+# Copy this file to android/key.properties for local release builds and keep the real values private.
+# Every published update must use the same keystore and alias. CI builds use the ANDROID_KEYSTORE_* secrets.
+storeFile=/absolute/path/to/assimilis-release.jks
 storePassword=change-me
-keyAlias=privatelm
+keyAlias=assimilis
 keyPassword=change-me
