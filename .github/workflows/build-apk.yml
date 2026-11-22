@@ -1,0 +1,30 @@
+name: Build Assimilis Mobile APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build release APK (arm64, debug-signed for personal install)
+        env:
+          ASSIMILIS_ALLOW_DEBUG_RELEASE_SIGNING: "true"
+        run: flutter build apk --release --target-platform android-arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assimilis-mobile-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

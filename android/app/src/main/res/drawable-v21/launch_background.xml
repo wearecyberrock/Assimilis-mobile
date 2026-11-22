@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Assimilis splash: navy #171b26 with the seven-armed tentacle icon -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><color android:color="#171b26" /></item>
+    <item>
+        <bitmap android:gravity="center" android:src="@drawable/splash_icon" />
+    </item>
+</layer-list>

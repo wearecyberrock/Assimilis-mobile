@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">Assimilis Mobile uses this service to read your screen and tap, type, scroll and open apps when you ask its Phone Agent to. Sending, paying, buying, deleting and similar actions always ask you first with an Allow / Deny prompt on screen. It never types into password fields.</string>
+</resources>
