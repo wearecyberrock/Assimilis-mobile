@@ -42,7 +42,17 @@ android {
             useLegacyPackaging = true
             // llama.cpp armv9 (SVE2/SME) CPU variants abort on some phones
             // (Pixel 8); the loader never picks them, so don't ship them.
-            excludes += setOf("**/libggml-cpu-android_armv9*.so")
+            // Also strip non-arm64 ABIs pulled in by transitive AARs (MLKit,
+            // CameraX, LiteRT, DataStore): Assimilis's native plugins are
+            // arm64-only, so partial armeabi-v7a/x86_64 folders bloat the APK
+            // and falsely advertise ABIs that lack libflutter.so and libapp.so.
+            excludes += setOf(
+                "**/libggml-cpu-android_armv9*.so",
+                "lib/armeabi-v7a/**",
+                "lib/armeabi/**",
+                "lib/x86/**",
+                "lib/x86_64/**",
+            )
         }
     }
 
@@ -64,12 +74,20 @@ android {
 
 
     signingConfigs {
+        getByName("debug") {
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
         if (hasReleaseKeystore) {
             create("release") {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
                 storeFile = file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
