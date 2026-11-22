@@ -11,6 +11,12 @@ When you open the app you land on the **Assimilis hub**, with four areas:
 | **Chat & Models** | PrivateLM | Chat with local GGUF models (llama.cpp), generate images on the phone (Stable Diffusion), run LiteRT models, and use cloud models (OpenAI, Claude, Gemini, Kimi) with your keys. Also handles model downloads, vision and documents. |
 | **Workstation** | PocketStrike | ReAct agent with tools, MCP servers, Hermes memory (USER / MEMORY / SOUL), file tools, more providers (OpenAI, Claude, Gemini, DeepSeek, Ollama), its own local models and image generation. |
 | **Phone Agent** | PrivateAgent | Tell it a task and it uses your phone: reads the screen, taps, types, scrolls, opens apps. It also has voice commands and a floating bubble. |
+| **Jarvis** | new | Hands-free voice mode in the Jarvis voice (Edge en-GB Ryan). Sets alarms and reminders, writes notes, logs HES, checks UWI, reads the web and runs phone tasks. Set its brain in the ⚙ sheet (an OpenRouter key works), or it uses your local model. |
+| **Canvas** | Assimilis Notes | Notebooks > sections > pages, LaTeX maths, calculator, graphs, derivatives and integrals, plus an infinite canvas with cards, connectors and ink. |
+| **UWI · Academic** | uwi-academic | Mona VLE courses, deadlines and announcements; turns deadlines into reminders. |
+| **HES** | organelle/hes | Stats E→SSS+, level, class, daily quests, trackers, quick log. |
+| **Alarms & Reminders** | new | Alarms, timers, and repeating reminders. |
+| **Agent Reach** | components/agent-reach | Read-only web search and readers. |
 | **Safety & Permissions** | new | Allow each Android permission (or **Allow all**), and pick the Phone Agent mode: **Ask me** or **Full allow**. |
 
 ## Phone Agent modes
