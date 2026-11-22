@@ -31,6 +31,7 @@
 
     <application
         android:label="Assimilis"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:largeHeap="true">

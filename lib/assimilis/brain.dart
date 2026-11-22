@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/inference_service.dart';
+import 'a2a/a2a.dart';
 import 'links/chatgpt_auth.dart';
 import 'links/hermes_link.dart';
 import 'settings.dart';
@@ -21,7 +22,11 @@ class BrainMessage {
 /// * Cloud: any OpenAI-compatible endpoint with tool calling (OpenRouter by default).
 /// * Offline: the GGUF model loaded in Chat & Models (no tools, plain answers).
 class AssimilisBrain {
-  AssimilisBrain._();
+  AssimilisBrain._() {
+    // Other devices (A2A) can ask this A; a request that already hopped is never passed on again.
+    A2a.askHandler = (text, {bool allowOffload = true}) async => (await ask(text, allowOffload: allowOffload)).content;
+    A2a.phoneTaskHandler = (task) => AssimilisTools.run('phone_task', {'task': task});
+  }
   static final AssimilisBrain instance = AssimilisBrain._();
 
   final List<Map<String, dynamic>> _history = [];
@@ -48,7 +53,7 @@ into ISO 8601 local time yourself.''';
   String lastBrain = '';
 
   /// Ask A. Brain order in "auto": your Hermes, ChatGPT sign-in, API key (with tools), local model.
-  Future<BrainMessage> ask(String text, {void Function(String)? onStatus}) async {
+  Future<BrainMessage> ask(String text, {void Function(String)? onStatus, bool allowOffload = true}) async {
     final s = await AssimilisSettings.get();
     final mode = s.blob('brain') ?? 'auto';
     final hasKey = (await s.apiKey()).isNotEmpty;
@@ -61,6 +66,7 @@ into ISO 8601 local time yourself.''';
           if (await HermesLink.instance.configured) 'hermes',
           if (await ChatGptAuth.instance.signedIn) 'chatgpt',
           if (hasKey) 'api',
+          if (!_localReady && allowOffload) 'device',
           'local',
         ],
     };
@@ -88,6 +94,13 @@ into ISO 8601 local time yourself.''';
             return BrainMessage('assistant', r.isEmpty ? 'Done.' : r, toolsUsed: const ['chatgpt']);
           case 'api':
             return await _askApi(text, onStatus: onStatus);
+          case 'device':
+            // No brain here: pass the question to the strongest nearby Assimilis (A2A).
+            final peer = await A2a.instance.best();
+            if (peer == null || !(peer.hasBrain || peer.hasModel)) throw Exception('no device with a brain nearby');
+            onStatus?.call('Asking ${peer.name}…');
+            final r = await A2a.instance.send(peer, text, skill: peer.hasBrain ? 'ask' : 'generate');
+            return BrainMessage('assistant', r, toolsUsed: ['via ${peer.name}']);
           default:
             return await _local(text);
         }
@@ -98,6 +111,8 @@ into ISO 8601 local time yourself.''';
     }
     return BrainMessage('assistant', 'I could not reach any brain: $lastError');
   }
+
+  bool get _localReady => Get.isRegistered<InferenceService>() && Get.find<InferenceService>().isModelLoaded.value;
 
   Future<BrainMessage> _askApi(String text, {void Function(String)? onStatus}) async {
     final s = await AssimilisSettings.get();

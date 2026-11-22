@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../assimilis/a2a/devices_view.dart';
 import '../assimilis/canvas/canvas_view.dart';
 import '../assimilis/hes/hes_store.dart';
 import '../assimilis/hes/hes_view.dart';
@@ -146,6 +147,7 @@ class _HubViewState extends State<HubView> {
               _row(Icons.phone_android_rounded, 'Phone Agent', 'Uses your phone for you',
                   () => _go(PrivateAgentApp(onboardingCompleted: phoneAgentOnboarded))),
               const HudHeader('System'),
+              _row(Icons.hub_rounded, 'Nearby A\x27s', 'Talk to A on your other devices and pass jobs around', () => _go(const DevicesView())),
               _row(Icons.memory_rounded, 'Devices & RAM', 'Pool phones and laptops to run bigger models', () => _go(const ClusterView())),
               _row(Icons.verified_user_outlined, 'Safety & Permissions', 'Ask me / Full allow, Android permissions', () => _go(const PermissionsView())),
             ]),

@@ -4,6 +4,15 @@
 The local build crashed because this PC ran out of RAM (7.8 GB) and disk. Nothing has been run on a phone. Until
 an APK is built and installed, everything under "Merged in" is "should work", not "tested".
 
+## Agent to agent (A2A, 2026-11-22, not yet tried on real devices)
+
+* Every device running the app is an A2A agent (open Agent2Agent protocol): agent card at `/.well-known/agent-card.json`, JSON-RPC `message/send` at `/a2a`, port 47800.
+* Found automatically on the same Wi-Fi (mDNS `_assimilis-a2a._tcp`); over Tailscale, add a device by its Tailscale name or IP in **Nearby A's**.
+* Skills per device: **ask** (its A answers), **generate** (raw text from its loaded model, for heavy jobs), **phone_task** (it uses that device; its own safety gate still applies).
+* A can `list_devices` and `ask_device` (by name or "best"). With no brain on this phone, A passes the question to the strongest nearby device automatically. A forwarded request is never forwarded again (no loops).
+* Incoming requests: **Ask me** (default: Allow once / Always / Deny per device), **Allow all**, or **Off**. Anyone running the app nearby can send requests.
+* Limits: works while the app is open (Android may pause it in the background). No encryption beyond what Tailscale gives; on open Wi-Fi others can read the traffic.
+
 ## For everyone (2026-11-22)
 
 * UWI / Mona VLE removed: it was personal to the owner.

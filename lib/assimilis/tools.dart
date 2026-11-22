@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../phone_agent/models/agent_action.dart';
 import '../phone_agent/services/action_handler.dart';
 import '../phone_agent/services/ai_service.dart';
+import 'a2a/a2a.dart';
 import 'canvas/maths.dart';
 import 'canvas/notes_store.dart';
 import 'hes/hes_store.dart';
@@ -46,6 +47,9 @@ class AssimilisTools {
     _fn('github', 'GitHub repo info + README ("owner/repo") or a repo search.', {'query': _s}, ['query']),
     _fn('reddit', 'Hot posts of a subreddit ("r/name") or a Reddit post URL.', {'target': _s}, ['target']),
     _fn('rss', 'Latest items of an RSS/Atom feed.', {'url': _s}, ['url']),
+    _fn('list_devices', 'Nearby Assimilis devices (A2A) with their brain, loaded model and RAM.', {}),
+    _fn('ask_device', 'Send a request to another Assimilis device. skill: ask (its A answers), generate (raw text from its loaded model; use for heavy jobs), phone_task (it uses that device). device: name, or "best" for the strongest.',
+        {'device': _s, 'message': _s, 'skill': _s}, ['device', 'message']),
     _fn('phone_task', 'Operate the phone screen to do a multi-step job in other apps (open apps, tap, type, scroll). '
         'Risky steps ask the owner on screen unless Full allow is on.', {'task': _s}, ['task']),
   ];
@@ -61,6 +65,7 @@ class AssimilisTools {
         'web_search' => 'Searching the web…',
         'read_url' || 'github' || 'reddit' || 'rss' => 'Reading…',
         'phone_task' => 'Working on your phone…',
+        'list_devices' || 'ask_device' => 'Talking to your devices…',
         _ => 'Working…',
       };
 
@@ -140,6 +145,18 @@ class AssimilisTools {
           return await AgentReach.reddit('${a['target']}');
         case 'rss':
           return await AgentReach.rss('${a['url']}');
+        case 'list_devices':
+          final ps = A2a.instance.peers.values.toList();
+          await Future.wait(ps.map(A2a.instance.refresh));
+          return ps.isEmpty
+              ? 'No other Assimilis devices found. They need the app open on the same Wi-Fi, or add one by Tailscale address.'
+              : ps.map((p) => '${p.name}: ${p.card == null ? 'offline' : 'brain ${p.hasBrain ? 'yes' : 'no'}, model ${p.hasModel ? p.stats['model'] : 'none'}, ${p.ramGb.toStringAsFixed(0)} GB RAM'}').join('\n');
+        case 'ask_device':
+          final skill = '${a['skill'] ?? 'ask'}';
+          final dev = '${a['device']}';
+          final peer = dev == 'best' ? await A2a.instance.best(needModel: skill == 'generate') : A2a.instance.find(dev);
+          if (peer == null) return 'No device called "$dev".';
+          return '${peer.name}: ${await A2a.instance.send(peer, '${a['message']}', skill: skill)}';
         case 'phone_task':
           final ai = AiService();
           await ai.init();

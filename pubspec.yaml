@@ -87,6 +87,7 @@ dependencies:
   math_expressions: ^3.2.0
   flutter_timezone: ^5.1.1
   webview_flutter: ^4.14.1
+  nsd: ^5.0.1
 
 dependency_overrides:
   llama_flutter_android:

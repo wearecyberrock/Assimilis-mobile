@@ -30,6 +30,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'hub/hub_view.dart';
 import 'assimilis/models/shared_library.dart';
+import 'assimilis/a2a/a2a.dart';
+import 'assimilis/brain.dart';
 import 'phone_agent/private_agent_main.dart' as phone_agent;
 import 'workstation/pocketstrike_main.dart' show sharedPreferencesProvider;
 
@@ -152,6 +154,10 @@ void main() {
     }
     final prefs = await SharedPreferences.getInstance();
     await SharedModelLibrary.init(); // one model folder for every agent
+
+    // Agent-to-agent with other Assimilis devices (A2A over Wi-Fi / Tailscale).
+    AssimilisBrain.instance; // registers A as the answerer for other devices
+    unawaited(A2a.instance.start());
 
     runApp(ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
