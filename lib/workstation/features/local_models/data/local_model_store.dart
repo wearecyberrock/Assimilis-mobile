@@ -8,6 +8,7 @@ import 'package:assimilis_mobile/workstation/core/services/notification_service.
 import 'package:assimilis_mobile/workstation/core/storage/prefs_provider.dart';
 import 'package:assimilis_mobile/workstation/features/local_models/data/local_model_engine.dart';
 import 'package:assimilis_mobile/workstation/features/local_models/data/local_model_info.dart';
+import 'package:assimilis_mobile/assimilis/models/shared_library.dart';
 import 'package:uuid/uuid.dart';
 
 class LocalModelState {
@@ -290,6 +291,38 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
       _saveModels(models);
     }
 
+    // Assimilis Mobile: one shared model library. Point presets at the shared copy when it exists,
+    // and list every model already in the shared folder (e.g. downloaded in Chat & Models).
+    final shared = SharedModelLibrary.files();
+    if (shared.isNotEmpty) {
+      final byName = {for (final f in shared) f.path.split('/').last: f};
+      models = models.map((m) {
+        final f = byName[m.filePath?.split('/').last ?? m.name] ?? byName[m.name];
+        return f != null && !File(m.filePath ?? '').existsSync() ? m.copyWith(filePath: f.path) : m;
+      }).toList();
+      final known = models.map((m) => (m.filePath ?? '').split('/').last).toSet();
+      for (final f in shared) {
+        final name = f.path.split('/').last;
+        if (known.contains(name) || !name.toLowerCase().endsWith('.gguf')) continue;
+        final size = f.lengthSync();
+        models.add(LocalModelInfo(
+          id: 'shared_$name',
+          name: name,
+          filePath: f.path,
+          fileSizeBytes: size,
+          type: LocalModelType.chatGguf,
+          quantization: RegExp(r'(Qd_K_[MS]|Qd_d|F16|BF16)', caseSensitive: false).firstMatch(name)?.group(1)?.toUpperCase() ?? 'GGUF',
+          isLoadedInRam: false,
+          ramUsageMb: size / (1024 * 1024) * 1.15,
+          contextSize: 2048,
+          threads: 4,
+          gpuLayers: 16,
+          isDefault: false,
+          importedAt: f.lastModifiedSync(),
+        ));
+      }
+    }
+
     return LocalModelState(
       models: models,
       activeModelId: activeId ??
@@ -408,9 +441,9 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
     final notifService = ref.read(notificationServiceProvider);
     final notifId = model.name.hashCode.abs() % 100000;
 
-    // Target storage directory (Android Downloads or App documents)
-    String targetPath = '/storage/emulated/0/Download/${model.name}';
-    bool canWriteExternal = false;
+    // Assimilis Mobile: download into the shared model library (used by every agent).
+    String targetPath = SharedModelLibrary.pathFor(model.name);
+    bool canWriteExternal = SharedModelLibrary.dir != null;
     try {
       final downloadDir = Directory('/storage/emulated/0/Download');
       if (!downloadDir.existsSync()) {
@@ -425,7 +458,7 @@ class LocalModelStoreNotifier extends Notifier<LocalModelState> {
       canWriteExternal = false;
     }
 
-    if (!canWriteExternal) {
+    if (!canWriteExternal && false) {
       final docDir = await getApplicationDocumentsDirectory();
       targetPath = '${docDir.path}/${model.name}';
     }

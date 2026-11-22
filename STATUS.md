@@ -4,6 +4,21 @@
 The local build crashed because this PC ran out of RAM (7.8 GB) and disk. Nothing has been run on a phone. Until
 an APK is built and installed, everything under "Merged in" is "should work", not "tested".
 
+## Redesign and links (2026-11-22, built but not yet tried on a phone)
+
+| Feature | What it does | Caveats |
+|---|---|---|
+| **New brand** | Violet #A855F7 on graphite, HES-style panels with corner brackets, Orbitron / JetBrains Mono / Inter fonts bundled. App icon and splash are the Core. The green pixel mascot is retired. | The three agent apps keep their own look, on purpose. |
+| **The real Core** | The hub and voice mode run the web UI's own `assimilis-core.js` + `assimilis-eye.js` in a small WebView. Its orbits show your reminders and deadlines, brains, HES stats, tools, courses and notes; it listens, thinks and speaks with A. | Display only on the phone (no dragging). |
+| **A** | The assistant is now Assimilis, "A". Voice mode says "Hi, I am Assimilis. You can call me A for short." | |
+| **HES rebuilt** | Status (title, class, rank, power, coins, AP, radar per branch), Quests, Modules, Abilities (unlock with AP when requirements are met), Log with undo, Evolution (why you got XP). "{time}" quest bug fixed. | Abilities check level, mission counts and streaks; other requirement kinds count as not met. |
+| **Models & Links** | One brain choice for A (Auto / My Hermes / ChatGPT / API key / local). | |
+| **My Hermes** | Phone logs into your Assimilis on laptop or VPS (LAN or Tailscale) and uses every model it has, including your subscriptions, and its core voice (Fish JARVIS if the server has a key, else Edge Ryan). | Needs Hermes reachable from the phone. |
+| **ChatGPT sign-in** | Codex-style OAuth on the phone; replies from your ChatGPT subscription. | Outside OpenAI's intended use for other apps (owner's choice). No Claude subscription login (Anthropic forbids it); use Claude through My Hermes. Model names may need updating as OpenAI changes them. |
+| **Shared keys** | Enter API keys once; they are written into Chat & Models, the Workstation (as "· shared" providers), the Phone Agent and A. | |
+| **Shared model library** | Everyone uses `<app documents>/models`; the Workstation downloads there and lists every model in it. | Models PocketStrike downloaded to Download/ before this update are not moved. |
+| **Laptops and PCs in the RAM pool** | `node/assimilis-node.ps1` (Windows) and `node/assimilis-node.sh` (Linux/macOS) download llama.cpp b11157 and run its RPC worker; add the PC in Devices & RAM. Host mode runs a big model on the PC with phones as extra RAM and gives A an OpenAI-style URL. | Windows PCs are added by address (Scan finds Linux/macOS only). The worker has no password: own Wi-Fi or Tailscale only. |
+
 ## New Assimilis features (on the phone, no server)
 
 | Feature | What it does | Caveats |

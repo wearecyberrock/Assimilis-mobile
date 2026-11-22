@@ -62,7 +62,7 @@ class _PageEditorState extends State<PageEditor> {
         actions: [
           SegmentedButton<String>(
             style: SegmentedButton.styleFrom(
-                foregroundColor: Colors.white70, selectedForegroundColor: Colors.white, selectedBackgroundColor: AssimilisBrand.green),
+                foregroundColor: Colors.white70, selectedForegroundColor: Colors.white, selectedBackgroundColor: AssimilisBrand.violet),
             segments: const [
               ButtonSegment(value: 'page', icon: Icon(Icons.article_rounded, size: 18)),
               ButtonSegment(value: 'canvas', icon: Icon(Icons.gesture_rounded, size: 18)),
@@ -128,7 +128,7 @@ class _PageEditorState extends State<PageEditor> {
   Widget _chip(String label, IconData icon, VoidCallback onTap) => Padding(
         padding: const EdgeInsets.only(right: 6, top: 6, bottom: 6),
         child: ActionChip(
-          avatar: Icon(icon, size: 16, color: AssimilisBrand.green),
+          avatar: Icon(icon, size: 16, color: AssimilisBrand.violet),
           label: Text(label),
           labelStyle: const TextStyle(color: Colors.white),
           backgroundColor: AssimilisBrand.navyRaised,
@@ -155,7 +155,7 @@ class _PageEditorState extends State<PageEditor> {
           'y': c.dy - 50,
           'w': 180.0,
           'text': 'New note',
-          'color': 0xFF1E2433,
+          'color': 0xFF23232B,
         }));
     _store.touch(p);
   }
@@ -222,7 +222,7 @@ class _PageEditorState extends State<PageEditor> {
               onPanEnd: _tool == 'ink'
                   ? (_) {
                       setState(() {
-                        ink.add({'points': [for (final o in _stroke!) [o.dx, o.dy]], 'color': 0xFF3D8C6E, 'w': 3.0});
+                        ink.add({'points': [for (final o in _stroke!) [o.dx, o.dy]], 'color': 0xFFA855F7, 'w': 3.0});
                         _stroke = null;
                       });
                       _store.touch(p);
@@ -248,10 +248,10 @@ class _PageEditorState extends State<PageEditor> {
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Color((n['color'] ?? 0xFF1E2433) as int),
+                          color: Color((n['color'] ?? 0xFF23232B) as int),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: _connectFrom == n['id'] ? AssimilisBrand.magenta : AssimilisBrand.green, width: 1.5),
+                              color: _connectFrom == n['id'] ? AssimilisBrand.magenta : AssimilisBrand.violet, width: 1.5),
                         ),
                         child: NoteRenderer('${n['text']}'),
                       ),
@@ -298,7 +298,7 @@ class _PageEditorState extends State<PageEditor> {
           _tool = tool;
           _connectFrom = null;
         }),
-        icon: Icon(i, color: _tool == tool ? AssimilisBrand.green : Colors.white70),
+        icon: Icon(i, color: _tool == tool ? AssimilisBrand.violet : Colors.white70),
       );
 }
 
@@ -317,7 +317,7 @@ class _CanvasPainter extends CustomPainter {
     }
     final byId = {for (final n in nodes) n['id']: n};
     final line = Paint()
-      ..color = const Color(0xAA3D8C6E)
+      ..color = const Color(0xAAA855F7)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     for (final k in conns) {
@@ -328,7 +328,7 @@ class _CanvasPainter extends CustomPainter {
       final dx = (p2.dx - p1.dx).abs() / 2 + 40;
       // Cubic Bezier: M x1 y1 C cx1 cy1, cx2 cy2, x2 y2
       c.drawPath(Path()..moveTo(p1.dx, p1.dy)..cubicTo(p1.dx + dx, p1.dy, p2.dx - dx, p2.dy, p2.dx, p2.dy), line);
-      c.drawCircle(p2, 4, Paint()..color = const Color(0xFF3D8C6E));
+      c.drawCircle(p2, 4, Paint()..color = const Color(0xFFA855F7));
     }
     void stroke(List<Offset> pts, Color color, double w) {
       if (pts.length < 2) return;
@@ -346,9 +346,9 @@ class _CanvasPainter extends CustomPainter {
 
     for (final s in ink) {
       stroke([for (final q in (s['points'] as List)) Offset((q[0] as num).toDouble(), (q[1] as num).toDouble())],
-          Color((s['color'] ?? 0xFF3D8C6E) as int), ((s['w'] ?? 3) as num).toDouble());
+          Color((s['color'] ?? 0xFFA855F7) as int), ((s['w'] ?? 3) as num).toDouble());
     }
-    if (live != null) stroke(live!, AssimilisBrand.green, 3);
+    if (live != null) stroke(live!, AssimilisBrand.violet, 3);
   }
 
   @override

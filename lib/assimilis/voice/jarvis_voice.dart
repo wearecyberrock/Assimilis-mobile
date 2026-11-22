@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../links/hermes_link.dart';
 import '../settings.dart';
 import 'edge_tts.dart';
 
@@ -16,7 +17,7 @@ class JarvisVoice {
   static final JarvisVoice instance = JarvisVoice._();
 
   static const personas = {
-    'jarvis': (voice: 'en-GB-RyanNeural', rate: -6, pitch: -3, locale: 'en-GB', name: 'JARVIS'),
+    'jarvis': (voice: 'en-GB-RyanNeural', rate: -6, pitch: -3, locale: 'en-GB', name: 'A'),
     'roamie': (voice: 'en-US-AndrewMultilingualNeural', rate: 0, pitch: 0, locale: 'en-US', name: 'Roamie'),
   };
 
@@ -26,8 +27,10 @@ class JarvisVoice {
     "Let's see.", 'Sure thing.', 'Coming up.', 'One moment.', 'Bear with.', 'Will do.', 'Roger.', 'Righto.',
   ];
 
-  final _player = AudioPlayer();
-  final _tts = FlutterTts();
+  // Created on first use, so screens that never speak do not start audio engines.
+  late final _player = AudioPlayer();
+  late final _tts = FlutterTts();
+  bool _used = false;
   final _cache = <String, Uint8List>{};
   bool _ttsReady = false;
   Completer<void>? _speaking;
@@ -59,8 +62,12 @@ class JarvisVoice {
   String randomBeat() => beats[Random().nextInt(beats.length)];
 
   Future<void> stop() async {
-    await _player.stop();
-    await _tts.stop();
+    if (_used) {
+      try {
+        await _player.stop();
+        await _tts.stop();
+      } catch (_) {}
+    }
     _speaking?.complete();
     _speaking = null;
     speakingStream.add(false);
@@ -71,10 +78,24 @@ class JarvisVoice {
     final clean = _speechText(text);
     if (clean.isEmpty) return;
     await stop();
+    _used = true;
     final s = await AssimilisSettings.get();
     final p = personas[s.persona] ?? personas['jarvis']!;
     speakingStream.add(true);
     try {
+      // 1. The core's own voice from your Hermes (Fish JARVIS if the server has a key, else its Edge voice).
+      if (s.blob('voice_source') != 'phone' && await HermesLink.instance.configured) {
+        try {
+          final key = 'core|$clean';
+          final bytes = _cache[key] ?? await HermesLink.instance.speak(clean, persona: s.persona);
+          if (bytes != null && bytes.isNotEmpty) {
+            _cache[key] = bytes;
+            await _play(bytes);
+            return;
+          }
+        } catch (_) {}
+      }
+      // 2. Edge Ryan straight from the phone.
       if (s.edgeVoice) {
         try {
           final key = '${p.voice}|$clean';
@@ -82,15 +103,7 @@ class JarvisVoice {
               await EdgeTts.synthesize(clean, voice: p.voice, ratePercent: p.rate, pitchHz: p.pitch);
           if (_cache.length > 40) _cache.remove(_cache.keys.first);
           _cache[key] = bytes;
-          _speaking = Completer<void>();
-          final c = _speaking!;
-          late StreamSubscription sub;
-          sub = _player.onPlayerComplete.listen((_) {
-            if (!c.isCompleted) c.complete();
-            sub.cancel();
-          });
-          await _player.play(BytesSource(bytes, mimeType: 'audio/mpeg'));
-          await c.future;
+          await _play(bytes);
           return;
         } catch (_) {
           // Offline or Edge changed its handshake: fall through to the phone voice.
@@ -101,6 +114,18 @@ class JarvisVoice {
     } finally {
       speakingStream.add(false);
     }
+  }
+
+  Future<void> _play(Uint8List bytes) async {
+    _speaking = Completer<void>();
+    final c = _speaking!;
+    late StreamSubscription sub;
+    sub = _player.onPlayerComplete.listen((_) {
+      if (!c.isCompleted) c.complete();
+      sub.cancel();
+    });
+    await _player.play(BytesSource(bytes, mimeType: 'audio/mpeg'));
+    await c.future;
   }
 
   /// Same idea as the desktop's SpeechText filter: don't read out code, URLs or markdown.

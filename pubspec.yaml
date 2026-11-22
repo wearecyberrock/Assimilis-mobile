@@ -86,6 +86,7 @@ dependencies:
   flutter_math_fork: ^0.7.4
   math_expressions: ^3.2.0
   flutter_timezone: ^5.1.1
+  webview_flutter: ^4.14.1
 
 dependency_overrides:
   llama_flutter_android:
@@ -110,3 +111,29 @@ flutter:
     - assets/phone_agent/
     - assets/hes/
     - assets/hes/modules/
+    - assets/core/
+
+  # Assimilis brand fonts (SIL Open Font License; bundled so they work offline)
+  fonts:
+    - family: Orbitron
+      fonts:
+        - asset: assets/fonts/Orbitron-500.ttf
+          weight: 500
+        - asset: assets/fonts/Orbitron-700.ttf
+          weight: 700
+        - asset: assets/fonts/Orbitron-800.ttf
+          weight: 800
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-400.ttf
+        - asset: assets/fonts/JetBrainsMono-600.ttf
+          weight: 600
+        - asset: assets/fonts/JetBrainsMono-700.ttf
+          weight: 700
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-400.ttf
+        - asset: assets/fonts/Inter-600.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-700.ttf
+          weight: 700

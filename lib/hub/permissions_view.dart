@@ -165,7 +165,7 @@ class _PermissionsViewState extends State<PermissionsView> with WidgetsBindingOb
               value: false,
               groupValue: _fullAllow,
               onChanged: (_) => _setFullAllow(false),
-              activeColor: AssimilisBrand.green,
+              activeColor: AssimilisBrand.violet,
               title: const Text('Ask me', style: TextStyle(color: Colors.white)),
               subtitle: const Text('Sending, paying, deleting, Enter, shell commands and banking apps '
                   'show Allow / Deny on screen first.', style: TextStyle(color: Colors.white60)),
@@ -174,7 +174,7 @@ class _PermissionsViewState extends State<PermissionsView> with WidgetsBindingOb
               value: true,
               groupValue: _fullAllow,
               onChanged: (_) => _setFullAllow(true),
-              activeColor: AssimilisBrand.green,
+              activeColor: AssimilisBrand.violet,
               title: const Text('Full allow', style: TextStyle(color: Colors.white)),
               subtitle: const Text('No prompts. The agent does everything it decides to do.',
                   style: TextStyle(color: Colors.white60)),
@@ -184,7 +184,7 @@ class _PermissionsViewState extends State<PermissionsView> with WidgetsBindingOb
           Row(children: [
             Expanded(child: _section('Android permissions')),
             FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: AssimilisBrand.green),
+              style: FilledButton.styleFrom(backgroundColor: AssimilisBrand.violet),
               onPressed: _allowAll,
               icon: const Icon(Icons.done_all_rounded),
               label: const Text('Allow all'),
@@ -202,14 +202,14 @@ class _PermissionsViewState extends State<PermissionsView> with WidgetsBindingOb
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: _card(ListTile(
-        leading: Icon(p.icon, color: on ? AssimilisBrand.green : Colors.white54),
+        leading: Icon(p.icon, color: on ? AssimilisBrand.violet : Colors.white54),
         title: Text(p.title, style: const TextStyle(color: Colors.white)),
         subtitle: Text(p.why, style: const TextStyle(color: Colors.white60)),
         trailing: on
-            ? const Icon(Icons.check_circle_rounded, color: AssimilisBrand.green)
+            ? const Icon(Icons.check_circle_rounded, color: AssimilisBrand.violet)
             : OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white, side: const BorderSide(color: AssimilisBrand.green)),
+                    foregroundColor: Colors.white, side: const BorderSide(color: AssimilisBrand.violet)),
                 onPressed: () => _allow(p),
                 child: const Text('Allow'),
               ),
@@ -220,7 +220,7 @@ class _PermissionsViewState extends State<PermissionsView> with WidgetsBindingOb
   Widget _section(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 8, top: 4),
         child: Text(t.toUpperCase(),
-            style: const TextStyle(color: AssimilisBrand.green, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
+            style: const TextStyle(color: AssimilisBrand.violet, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
       );
 
   Widget _card(Widget child) => Container(

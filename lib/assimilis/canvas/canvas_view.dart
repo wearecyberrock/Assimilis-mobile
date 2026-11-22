@@ -36,7 +36,7 @@ class _CanvasViewState extends State<CanvasView> {
   }
 
   Future<void> _open(Map page) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => PageEditor(page: page)));
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => Theme(data: AssimilisBrand.theme(), child: PageEditor(page: page))));
     setState(() {});
   }
 
@@ -82,7 +82,7 @@ class _CanvasViewState extends State<CanvasView> {
               if (_q.trim().isNotEmpty)
                 for (final r in _s.search(_q))
                   ListTile(
-                    leading: const Icon(Icons.description_rounded, color: AssimilisBrand.green),
+                    leading: const Icon(Icons.description_rounded, color: AssimilisBrand.violet),
                     title: Text('${r.page['title']}', style: const TextStyle(color: Colors.white)),
                     subtitle: Text('${r.book['name']} › ${r.section['name']}', style: const TextStyle(color: Colors.white54)),
                     onTap: () => _open(r.page),
@@ -101,7 +101,7 @@ class _CanvasViewState extends State<CanvasView> {
       child: ExpansionTile(
         iconColor: Colors.white,
         collapsedIconColor: Colors.white54,
-        leading: Icon(Icons.menu_book_rounded, color: Color((b['color'] ?? 0xFF3D8C6E) as int)),
+        leading: Icon(Icons.menu_book_rounded, color: Color((b['color'] ?? 0xFFA855F7) as int)),
         title: Text('${b['name']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         children: [
           for (final s in (b['sections'] as List))
@@ -121,8 +121,8 @@ class _CanvasViewState extends State<CanvasView> {
                   ),
                 ListTile(
                   dense: true,
-                  leading: const Icon(Icons.add_rounded, color: AssimilisBrand.green),
-                  title: const Text('New page', style: TextStyle(color: AssimilisBrand.green)),
+                  leading: const Icon(Icons.add_rounded, color: AssimilisBrand.violet),
+                  title: const Text('New page', style: TextStyle(color: AssimilisBrand.violet)),
                   onTap: () async {
                     final t = await _ask('Page title');
                     if (t == null || t.isEmpty) return;

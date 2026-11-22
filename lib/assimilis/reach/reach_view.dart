@@ -68,7 +68,7 @@ class _ReachViewState extends State<ReachView> {
                 child: ChoiceChip(
                   label: Text(m),
                   selected: _mode == m,
-                  selectedColor: AssimilisBrand.green,
+                  selectedColor: AssimilisBrand.violet,
                   labelStyle: const TextStyle(color: Colors.white),
                   backgroundColor: AssimilisBrand.navyRaised,
                   onSelected: (_) => setState(() => _mode = m),
@@ -94,7 +94,7 @@ class _ReachViewState extends State<ReachView> {
               filled: true,
               fillColor: AssimilisBrand.navyRaised,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-              suffixIcon: IconButton(onPressed: _go, icon: const Icon(Icons.arrow_forward_rounded, color: AssimilisBrand.green)),
+              suffixIcon: IconButton(onPressed: _go, icon: const Icon(Icons.arrow_forward_rounded, color: AssimilisBrand.violet)),
             ),
           ),
         ),

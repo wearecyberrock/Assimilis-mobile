@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<!-- The real Assimilis Core from the web UI (webui/static/assimilis-core.js + brand/assimilis-eye.js, copied
+     unchanged from Elevedenbot origin/main 2956c69f9). Assimilis Mobile drives it through window.asm.*. -->
+<style>
+  :root {
+    --as-core-violet: #a855f7; --as-core-magenta: #e61478; --as-core-hot: #fff3fb;
+    --as-brand-magenta: #e61478; --as-core-bg: #121216;
+  }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+  .core-stage { position: absolute; inset: 0; }
+  .core-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+  .core-eye { position: absolute; left: 0; top: 0; width: 80px; height: 80px; pointer-events: none; will-change: transform; }
+  .core-eye:empty { display: none; }
+  .core-eye svg { width: 100%; height: 100%; display: block; }
+</style>
+<script src="assimilis-eye.js"></script>
+<script src="assimilis-core.js"></script>
+</head>
+<body>
+<div class="core-stage" id="stage"></div>
+<script>
+  (function () {
+    var view = window.AssimilisCore.mount(document.getElementById('stage'), {
+      theme: 'violet',
+      label: 'The Assimilis Core',
+      onPick: function (n) { try { AsmBridge.postMessage(JSON.stringify({ pick: n && n.id })); } catch (_) {} }
+    });
+    view.setGraph({ rings: {} });
+    view.start();
+    var beatTimer = 0;
+    window.asm = {
+      setGraph: function (g) { view.setGraph(g); },
+      setState: function (s) {
+        view.setState(s);
+        clearInterval(beatTimer);
+        // Phone speech gives no audio level, so the core pulses with a beat per word, like the web.
+        if (s === 'speaking') beatTimer = setInterval(function () { view.beat(0.45 + Math.random() * 0.5); }, 260);
+      },
+      beat: function (l) { view.beat(l); },
+      level: function (l) { if (l > 0.08) view.beat(l); },
+      point: function (id) { return view.point(id, 6000); },
+      light: function (ids) { return view.light(ids, 12000); },
+      pause: function () { view.pause(); },
+      resume: function () { view.start(); },
+      zoom: function (z) { view.setZoom(z); }
+    };
+    try { AsmBridge.postMessage(JSON.stringify({ ready: true })); } catch (_) {}
+  })();
+</script>
+</body>
+</html>

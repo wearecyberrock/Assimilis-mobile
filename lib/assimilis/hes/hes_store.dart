@@ -177,7 +177,7 @@ class HesStore {
         out.add({
           'module': id,
           'key': key,
-          'title': '${ms['title']}'.replaceAll('{target}', _num(target)),
+          'title': _fill('${ms['title']}', target),
           'target': target,
           'done': done,
           'claimed': claimed,
@@ -219,6 +219,73 @@ class HesStore {
     final open = q.where((e) => e['claimed'] != true).length;
     return 'Level ${s.level}, rank ${s.rankName}, ${s.className}. Power ${s.powerValue}, '
         '${s.xp} of ${s.xpNext} XP to the next level, ${s.coins} coins. $open quest${open == 1 ? '' : 's'} open today.';
+  }
+
+  /// Fill quest title placeholders: {target}, {time} (wake time setting), anything else removed.
+  String _fill(String title, double target) => title
+      .replaceAll('{target}', _num(target))
+      .replaceAll('{time}', '${settings['wake_time'] ?? '06:30'}')
+      .replaceAll(RegExp(r'{[a-z_]+}'), '')
+      .replaceAll(RegExp(r's+'), ' ')
+      .trim();
+
+  Future<void> setSetting(String key, Object value) async {
+    _doc['settings'] = {...settings, key: value};
+    await _save();
+  }
+
+  // ---- Abilities and titles (abilities.json)
+  List<Map<String, dynamic>> get abilityDefs => data?.abilities ?? const [];
+
+  /// How many claimed quests match a mission key ("wake" matches "wake@2026-11-22").
+  int _missionCount(String key) => events
+      .where((e) => e['kind'] == 'mission' && e['status'] == 'applied')
+      .where((e) => '${e['data']?['key'] ?? ''}'.split('@').first == key.split('@').first)
+      .length;
+
+  /// Whether requirements are met: {level: n}, {missions: {key: n}}, {streak: {module: days}}.
+  bool meets(Map? req, HesState s) {
+    if (req == null || req.isEmpty) return true;
+    if (req['level'] is num && s.level < (req['level'] as num)) return false;
+    final missions = req['missions'] as Map?;
+    if (missions != null) {
+      for (final e in missions.entries) {
+        if (_missionCount('${e.key}') < (e.value as num)) return false;
+      }
+    }
+    final streaks = req['streak'] as Map?;
+    if (streaks != null) {
+      for (final e in streaks.entries) {
+        final pattern = '${e.key}'.replaceAll('*', '');
+        final best = (data?.modules.keys ?? const <String>[])
+            .where((m) => m.startsWith(pattern))
+            .map((m) => streak(events, m).$2)
+            .fold<int>(0, (a, b) => a > b ? a : b);
+        if (best < (e.value as num)) return false;
+      }
+    }
+    return true;
+  }
+
+  Future<String> unlock(Map<String, dynamic> ability) async {
+    final s = await state();
+    if (s.unlocked.contains(ability['id'])) return 'Already unlocked.';
+    if (!meets(ability['requires'] as Map?, s)) return 'Not yet: ${ability['requires_text'] ?? 'requirements not met'}.';
+    final cost = ((ability['cost_ap'] ?? 1) as num).toInt();
+    if (s.ap < cost) return 'You need $cost AP (you have ${s.ap}).';
+    await _add({'kind': 'ability', 'summary': 'Ability: ${ability['name']}', 'data': {'ability': ability['id']}});
+    return 'Unlocked ${ability['name']}.';
+  }
+
+  /// Current title: the last title in abilities.json whose requirements are met.
+  Future<String> title() async {
+    final s = await state();
+    var t = 'Novice';
+    final raw = jsonDecode(await rootBundle.loadString('assets/hes/abilities.json'));
+    for (final x in (raw['titles'] as List? ?? const [])) {
+      if (meets(x['requires'] as Map?, s)) t = '${x['name']}';
+    }
+    return t;
   }
 
   static String _num(num v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);

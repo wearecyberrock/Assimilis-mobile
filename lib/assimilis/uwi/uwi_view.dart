@@ -98,7 +98,7 @@ class _UwiViewState extends State<UwiView> {
           bottom: const TabBar(
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white54,
-            indicatorColor: AssimilisBrand.green,
+            indicatorColor: AssimilisBrand.violet,
             tabs: [Tab(text: 'Deadlines'), Tab(text: 'Courses'), Tab(text: 'News')],
           ),
         ),
@@ -129,7 +129,7 @@ class _UwiViewState extends State<UwiView> {
                     ListView(children: [
                       for (final c in courses)
                         ListTile(
-                          leading: const Icon(Icons.school_rounded, color: AssimilisBrand.green),
+                          leading: const Icon(Icons.school_rounded, color: AssimilisBrand.violet),
                           title: Text('${c['code']}', style: const TextStyle(color: Colors.white)),
                           subtitle: Text('${c['name']}', style: const TextStyle(color: Colors.white54)),
                           trailing: IconButton(
@@ -154,7 +154,7 @@ class _UwiViewState extends State<UwiView> {
                     ListView(children: [
                       for (final a in ann)
                         ListTile(
-                          leading: const Icon(Icons.campaign_rounded, color: AssimilisBrand.green),
+                          leading: const Icon(Icons.campaign_rounded, color: AssimilisBrand.violet),
                           title: Text('${a['title']}', style: const TextStyle(color: Colors.white)),
                           subtitle: Text('${a['course']} · ${a['author']}', style: const TextStyle(color: Colors.white54)),
                           onTap: () => launchUrl(Uri.parse('${a['url']}'), mode: LaunchMode.externalApplication),
@@ -174,7 +174,7 @@ class _UwiViewState extends State<UwiView> {
     final soon = left != null && left.inHours < 48;
     return ListTile(
       leading: Icon(d['type'] == 'quiz' ? Icons.quiz_rounded : Icons.assignment_rounded,
-          color: soon ? AssimilisBrand.magenta : AssimilisBrand.green),
+          color: soon ? AssimilisBrand.magenta : AssimilisBrand.violet),
       title: Text('${d['name']}', style: const TextStyle(color: Colors.white)),
       subtitle: Text(
           '${d['course'] ?? ''} · ${at == null ? '' : '${at.day}/${at.month} ${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}'}'

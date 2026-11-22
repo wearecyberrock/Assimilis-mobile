@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../hub/brand.dart';
+import '../../hub/core_orb.dart';
+import '../../hub/core_view.dart';
 import '../brain.dart';
 import '../settings.dart';
 import 'jarvis_voice.dart';
@@ -12,7 +13,8 @@ import 'jarvis_voice.dart';
 /// Jarvis voice mode: tap the reactor (or say nothing and type), it listens, thinks, and answers aloud
 /// in the Jarvis voice. In continuous mode it keeps the conversation going hands-free.
 class VoiceModeView extends StatefulWidget {
-  const VoiceModeView({super.key});
+  const VoiceModeView({super.key, this.introduce = true});
+  final bool introduce;
   @override
   State<VoiceModeView> createState() => _VoiceModeViewState();
 }
@@ -42,6 +44,7 @@ class _VoiceModeViewState extends State<VoiceModeView> with SingleTickerProvider
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!MediaQuery.of(context).disableAnimations) _spin.repeat();
+      _intro();
     });
   }
 
@@ -53,6 +56,18 @@ class _VoiceModeViewState extends State<VoiceModeView> with SingleTickerProvider
     _speakSub?.cancel();
     _spin.dispose();
     super.dispose();
+  }
+
+  static bool _introduced = false;
+
+  /// A introduces itself the first time voice mode opens in a session.
+  Future<void> _intro() async {
+    if (_introduced || !widget.introduce) return;
+    _introduced = true;
+    const hello = "Hi, I am Assimilis. You can call me A for short.";
+    setState(() => _msgs.add(BrainMessage('assistant', hello)));
+    await _voice.speak(hello);
+    if (mounted) setState(() => _phase = _Phase.idle);
   }
 
   Future<void> _listen() async {
@@ -85,7 +100,7 @@ class _VoiceModeViewState extends State<VoiceModeView> with SingleTickerProvider
       return;
     }
     final l = text.toLowerCase();
-    if (RegExp(r'^(stop|goodbye|bye|that.s all|thank you jarvis|thanks jarvis)\b').hasMatch(l)) {
+    if (RegExp(r'^(stop|goodbye|bye|that.s all|thank you a|thanks a|thank you assimilis|thanks assimilis|thanks jarvis)\b').hasMatch(l)) {
       _active = false;
       setState(() => _msgs.add(BrainMessage('user', text)));
       await _voice.speak('Very good.');
@@ -139,36 +154,39 @@ class _VoiceModeViewState extends State<VoiceModeView> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final label = switch (_phase) {
-      _Phase.idle => 'Tap to talk',
+      _Phase.idle => 'Tap the core to talk to A',
       _Phase.listening => _partial.isEmpty ? 'Listening…' : _partial,
       _Phase.thinking => _status ?? 'Thinking…',
       _Phase.speaking => 'Speaking · tap to stop',
     };
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0D14),
+      backgroundColor: AssimilisBrand.graphite,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text('J.A.R.V.I.S.', style: TextStyle(letterSpacing: 4, fontWeight: FontWeight.w300)),
+        centerTitle: true,
+        title: Text('ASSIMILIS', style: AssimilisBrand.display(16, color: AssimilisBrand.violetSoft).copyWith(letterSpacing: 6, shadows: [const Shadow(color: AssimilisBrand.violet, blurRadius: 14)])),
         actions: [
           IconButton(icon: const Icon(Icons.refresh_rounded), tooltip: 'New conversation', onPressed: () {
             _brain.reset();
             setState(_msgs.clear);
           }),
-          IconButton(icon: const Icon(Icons.tune_rounded), tooltip: 'Jarvis settings', onPressed: () => showJarvisSettings(context)),
+          IconButton(icon: const Icon(Icons.tune_rounded), tooltip: 'A settings', onPressed: () => showJarvisSettings(context)),
         ],
       ),
       body: Column(children: [
         const SizedBox(height: 8),
         GestureDetector(
           onTap: _tapReactor,
-          child: SizedBox(
-            width: 210,
-            height: 210,
-            child: AnimatedBuilder(
-              animation: _spin,
-              builder: (_, __) => CustomPaint(painter: _Reactor(_spin.value, _phase, _level)),
-            ),
+          child: CoreView(
+            size: 300,
+            level: _level,
+            mood: switch (_phase) {
+              _Phase.listening => CoreMood.listening,
+              _Phase.thinking => CoreMood.thinking,
+              _Phase.speaking => CoreMood.speaking,
+              _Phase.idle => CoreMood.idle,
+            },
           ),
         ),
         Padding(
@@ -191,9 +209,9 @@ class _VoiceModeViewState extends State<VoiceModeView> with SingleTickerProvider
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                   constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
                   decoration: BoxDecoration(
-                    color: me ? AssimilisBrand.green.withValues(alpha: 0.25) : const Color(0xFF151B26),
+                    color: me ? AssimilisBrand.violet.withValues(alpha: 0.18) : AssimilisBrand.panel,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: me ? AssimilisBrand.green : const Color(0x55E61478)),
+                    border: Border.all(color: me ? AssimilisBrand.violet : AssimilisBrand.line),
                   ),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     SelectableText(m.content, style: const TextStyle(color: Colors.white, height: 1.35)),
@@ -223,13 +241,13 @@ class _VoiceModeViewState extends State<VoiceModeView> with SingleTickerProvider
                 _send(v.trim());
               },
               decoration: InputDecoration(
-                hintText: 'Or type to Jarvis…',
+                hintText: 'Or type to A…',
                 hintStyle: const TextStyle(color: Colors.white38),
                 filled: true,
-                fillColor: const Color(0xFF151B26),
+                fillColor: AssimilisBrand.panel,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide.none),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.mic_rounded, color: AssimilisBrand.green),
+                  icon: const Icon(Icons.mic_rounded, color: AssimilisBrand.violet),
                   onPressed: _tapReactor,
                 ),
               ),
@@ -239,59 +257,6 @@ class _VoiceModeViewState extends State<VoiceModeView> with SingleTickerProvider
       ]),
     );
   }
-}
-
-/// Arc-reactor orb: rotating segmented rings, magenta core (the Assimilis eye colour), green arcs.
-class _Reactor extends CustomPainter {
-  final double t, level;
-  final _Phase phase;
-  _Reactor(this.t, this.phase, this.level);
-
-  @override
-  void paint(Canvas c, Size s) {
-    final ctr = s.center(Offset.zero);
-    final r = s.shortestSide / 2;
-    final pulse = switch (phase) {
-      _Phase.listening => 0.08 + level * 0.18,
-      _Phase.speaking => 0.08 + 0.06 * math.sin(t * math.pi * 24).abs(),
-      _Phase.thinking => 0.05,
-      _Phase.idle => 0.0,
-    };
-    final glow = Paint()
-      ..shader = RadialGradient(colors: [
-        AssimilisBrand.magenta.withValues(alpha: 0.55),
-        AssimilisBrand.green.withValues(alpha: 0.15),
-        Colors.transparent,
-      ], stops: const [0, 0.45, 1])
-          .createShader(Rect.fromCircle(center: ctr, radius: r));
-    c.drawCircle(ctr, r, glow);
-    void ring(double rad, double width, int segs, double speed, Color col) {
-      final p = Paint()
-        ..color = col
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = width
-        ..strokeCap = StrokeCap.round;
-      final sweep = 2 * math.pi / segs;
-      for (var i = 0; i < segs; i++) {
-        c.drawArc(Rect.fromCircle(center: ctr, radius: rad), i * sweep + t * 2 * math.pi * speed, sweep * 0.62, false, p);
-      }
-    }
-
-    final busy = phase == _Phase.thinking ? 3.0 : 1.0;
-    ring(r * 0.86, 3, 24, 0.5 * busy, AssimilisBrand.green.withValues(alpha: 0.8));
-    ring(r * 0.72, 6, 7, -0.8 * busy, AssimilisBrand.green); // seven arms, like the icon
-    ring(r * 0.58, 2, 36, 1.4 * busy, Colors.white24);
-    final core = r * (0.32 + pulse);
-    c.drawCircle(ctr, core, Paint()..color = AssimilisBrand.magenta);
-    c.drawCircle(ctr.translate(-core * 0.3, -core * 0.3), core * 0.32, Paint()..color = const Color(0xFFFF7BB8));
-    c.drawCircle(ctr, core * 1.18, Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2);
-  }
-
-  @override
-  bool shouldRepaint(covariant _Reactor o) => true;
 }
 
 /// Brain + voice settings, shared by Jarvis everywhere.
@@ -310,7 +275,7 @@ Future<void> showJarvisSettings(BuildContext context) async {
         padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(c).viewInsets.bottom + 24),
         child: SingleChildScrollView(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Jarvis brain', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+            const Text('A · brain (more in Models & Links)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Wrap(spacing: 6, children: [
               for (final e in AssimilisSettings.presets.entries)
@@ -326,7 +291,7 @@ Future<void> showJarvisSettings(BuildContext context) async {
             const SizedBox(height: 16),
             const Text('Voice', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
             RadioListTile(value: 'jarvis', groupValue: s.persona, onChanged: (v) => set(() => s.persona = v!),
-                title: const Text('JARVIS · en-GB Ryan (Edge)', style: TextStyle(color: Colors.white))),
+                title: const Text('A · JARVIS voice (core voice when Hermes is linked, else Edge Ryan)', style: TextStyle(color: Colors.white))),
             RadioListTile(value: 'roamie', groupValue: s.persona, onChanged: (v) => set(() => s.persona = v!),
                 title: const Text('Roamie · en-US Andrew (Edge)', style: TextStyle(color: Colors.white))),
             SwitchListTile(value: s.edgeVoice, onChanged: (v) => set(() => s.edgeVoice = v),
@@ -338,7 +303,7 @@ Future<void> showJarvisSettings(BuildContext context) async {
                 title: const Text('Hands-free (keep listening)', style: TextStyle(color: Colors.white))),
             const SizedBox(height: 8),
             Row(children: [
-              OutlinedButton(onPressed: () => JarvisVoice.instance.speak('Good evening. All systems are online.'), child: const Text('Test voice')),
+              OutlinedButton(onPressed: () => JarvisVoice.instance.speak('Hi, I am Assimilis. You can call me A for short.'), child: const Text('Test voice')),
               const Spacer(),
               FilledButton(
                 onPressed: () async {

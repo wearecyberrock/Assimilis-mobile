@@ -108,7 +108,7 @@ class _RemindersViewState extends State<RemindersView> {
           const SizedBox(width: 8),
           Expanded(child: _btn(Icons.notification_add_rounded, 'Reminder', _reminder)),
         ]),
-        if (_msg != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_msg!, style: const TextStyle(color: Color(0xFF7FD8B5)))),
+        if (_msg != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_msg!, style: const TextStyle(color: AssimilisBrand.mint))),
         const SizedBox(height: 16),
         const Text('Tip: say "Jarvis, remind me to submit COMP2201 tomorrow at 9" or "wake me at 6:30".',
             style: TextStyle(color: Colors.white54)),
@@ -117,7 +117,7 @@ class _RemindersViewState extends State<RemindersView> {
           Card(
             color: AssimilisBrand.navyRaised,
             child: ListTile(
-              leading: Icon(r.source == 'uwi' ? Icons.school_rounded : Icons.notifications_active_rounded, color: AssimilisBrand.green),
+              leading: Icon(r.source == 'uwi' ? Icons.school_rounded : Icons.notifications_active_rounded, color: AssimilisBrand.violet),
               title: Text(r.title, style: const TextStyle(color: Colors.white)),
               subtitle: Text('${r.at.day}/${r.at.month} ${r.at.hour.toString().padLeft(2, '0')}:${r.at.minute.toString().padLeft(2, '0')}'
                   '${r.repeat == 'none' ? '' : ' · ${r.repeat}'}', style: const TextStyle(color: Colors.white54)),
@@ -138,7 +138,7 @@ class _RemindersViewState extends State<RemindersView> {
   Widget _btn(IconData i, String t, VoidCallback f) => FilledButton.tonalIcon(
         style: FilledButton.styleFrom(backgroundColor: AssimilisBrand.navyRaised, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14)),
         onPressed: f,
-        icon: Icon(i, color: AssimilisBrand.green),
+        icon: Icon(i, color: AssimilisBrand.violet),
         label: Text(t),
       );
 }

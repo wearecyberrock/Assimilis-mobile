@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/inference_service.dart';
+import 'links/chatgpt_auth.dart';
+import 'links/hermes_link.dart';
 import 'settings.dart';
 import 'tools.dart';
 
@@ -27,8 +29,8 @@ class AssimilisBrain {
 
   String _system() {
     final now = DateTime.now();
-    return '''You are JARVIS, the Assimilis assistant on the owner's Android phone. Speak like a calm,
-capable British butler-engineer: short, clear sentences, no filler. Replies are read aloud, so keep
+    return '''You are Assimilis, "A" for short, the owner's assistant on their Android phone. Speak calmly and
+clearly, like a capable British engineer: short sentences, no filler. Replies are read aloud, so keep
 them under 3 sentences unless asked for detail, and never read out code or long URLs.
 The current local date and time is ${now.toIso8601String()} (${_weekday(now.weekday)}).
 You can act through tools: alarms, timers and reminders; Canvas notes and maths; HES stats and
@@ -41,8 +43,62 @@ into ISO 8601 local time yourself.''';
   static String _weekday(int d) =>
       const ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][d - 1];
 
-  /// Ask the brain. [onStatus] reports tool use ("Setting a reminder…").
+  /// Which brain answered last (shown under replies).
+  String lastBrain = '';
+
+  /// Ask A. Brain order in "auto": your Hermes, ChatGPT sign-in, API key (with tools), local model.
   Future<BrainMessage> ask(String text, {void Function(String)? onStatus}) async {
+    final s = await AssimilisSettings.get();
+    final mode = s.blob('brain') ?? 'auto';
+    final hasKey = (await s.apiKey()).isNotEmpty;
+    final order = switch (mode) {
+      'hermes' => ['hermes'],
+      'chatgpt' => ['chatgpt'],
+      'api' => ['api'],
+      'local' => ['local'],
+      _ => [
+          if (await HermesLink.instance.configured) 'hermes',
+          if (await ChatGptAuth.instance.signedIn) 'chatgpt',
+          if (hasKey) 'api',
+          'local',
+        ],
+    };
+    Object? lastError;
+    for (final b in order) {
+      try {
+        lastBrain = b;
+        switch (b) {
+          case 'hermes':
+            final quick = await AssimilisTools.offlineIntent(text);
+            if (quick != null) return BrainMessage('assistant', quick, toolsUsed: const ['on phone']);
+            onStatus?.call('Asking your Hermes…');
+            final r = await HermesLink.instance.chat(text);
+            return BrainMessage('assistant', r.isEmpty ? 'Done.' : r, toolsUsed: const ['hermes']);
+          case 'chatgpt':
+            final quick = await AssimilisTools.offlineIntent(text);
+            if (quick != null) return BrainMessage('assistant', quick, toolsUsed: const ['on phone']);
+            _history.add({'role': 'user', 'content': text});
+            final hist = [
+              for (final m in _history.where((m) => (m['role'] == 'user' || m['role'] == 'assistant') && m['content'] is String))
+                {'role': '${m['role']}', 'content': '${m['content']}'}
+            ];
+            final r = await ChatGptAuth.instance.chat(hist, system: _system(), model: s.blob('chatgpt_model') ?? ChatGptAuth.models.first);
+            _history.add({'role': 'assistant', 'content': r});
+            return BrainMessage('assistant', r.isEmpty ? 'Done.' : r, toolsUsed: const ['chatgpt']);
+          case 'api':
+            return await _askApi(text, onStatus: onStatus);
+          default:
+            return await _local(text);
+        }
+      } catch (e) {
+        lastError = e;
+        if (_history.isNotEmpty && _history.last['role'] == 'user') _history.removeLast();
+      }
+    }
+    return BrainMessage('assistant', 'I could not reach any brain: $lastError');
+  }
+
+  Future<BrainMessage> _askApi(String text, {void Function(String)? onStatus}) async {
     final s = await AssimilisSettings.get();
     final key = await s.apiKey();
     _history.add({'role': 'user', 'content': text});

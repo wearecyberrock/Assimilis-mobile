@@ -87,7 +87,7 @@ class _FunctionGraphState extends State<FunctionGraph> {
       onDoubleTap: () => setState(() { _span = 10; _cx = 0; _cy = 0; }),
       child: Container(
         height: widget.height,
-        decoration: BoxDecoration(color: const Color(0xFF0E131B), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: AssimilisBrand.graphite, borderRadius: BorderRadius.circular(12)),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: CustomPaint(painter: _GraphPainter(widget.functions, _span, _cx, _cy), size: Size.infinite),
@@ -101,7 +101,7 @@ class _GraphPainter extends CustomPainter {
   final List<String> fns;
   final double span, cx, cy;
   _GraphPainter(this.fns, this.span, this.cx, this.cy);
-  static const colors = [AssimilisBrand.green, AssimilisBrand.magenta, Color(0xFF42A5F5), Color(0xFFFFB300)];
+  static const colors = [AssimilisBrand.violet, AssimilisBrand.magenta, Color(0xFF42A5F5), Color(0xFFFFB300)];
 
   @override
   void paint(Canvas c, Size size) {
@@ -147,7 +147,7 @@ class _GraphPainter extends CustomPainter {
       }
       c.drawPath(path, paint);
       final tp = TextPainter(
-          text: TextSpan(text: 'y = ${fns[i]}', style: TextStyle(color: colors[i % colors.length], fontSize: 12)),
+          text: TextSpan(text: 'y = ${fns[i]}', style: TextStyle(fontFamily: 'JetBrainsMono', color: colors[i % colors.length], fontSize: 12)),
           textDirection: TextDirection.ltr)
         ..layout();
       tp.paint(c, Offset(8, 6 + i * 16.0));

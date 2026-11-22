@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:markdown/markdown.dart' as md;
 
+import '../../hub/brand.dart';
 import 'maths.dart';
 
 /// Renders a page: markdown, $inline$ and $$display$$ LaTeX, and prompt(...) blocks
@@ -47,8 +48,8 @@ class NoteRenderer extends StatelessWidget {
             h2: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
             h3: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
             listBullet: const TextStyle(color: Colors.white70),
-            code: const TextStyle(color: Color(0xFF7FD8B5), backgroundColor: Color(0xFF0E131B)),
-            blockquoteDecoration: BoxDecoration(color: const Color(0xFF1E2433), borderRadius: BorderRadius.circular(8)),
+            code: const TextStyle(color: AssimilisBrand.mint, backgroundColor: AssimilisBrand.graphite),
+            blockquoteDecoration: BoxDecoration(color: AssimilisBrand.raised, borderRadius: BorderRadius.circular(8)),
             tableBody: const TextStyle(color: Colors.white),
             tableHead: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
           ),
@@ -79,9 +80,9 @@ class NoteRenderer extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 8),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-              color: const Color(0xFF151B26),
+              color: AssimilisBrand.panel,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0x553D8C6E))),
+              border: Border.all(color: const Color(0x55A855F7))),
           child: child,
         );
     switch (action) {
@@ -90,19 +91,19 @@ class NoteRenderer extends StatelessWidget {
       case 'calc':
         final e = rest.join(',');
         return box(Text('$e = ${Maths.calc(e)}',
-            style: const TextStyle(color: Color(0xFF7FD8B5), fontSize: 16, fontFamily: 'monospace')));
+            style: const TextStyle(color: AssimilisBrand.mint, fontSize: 16, fontFamily: 'monospace')));
       case 'graph':
       case 'plot':
         return box(FunctionGraph(functions: rest.isEmpty ? ['x'] : rest));
       case 'derive':
         final e = rest.join(',');
         return box(Text("d/dx [$e] = ${Maths.derive(e)}",
-            style: const TextStyle(color: Color(0xFF7FD8B5), fontFamily: 'monospace')));
+            style: const TextStyle(color: AssimilisBrand.mint, fontFamily: 'monospace')));
       case 'integrate':
         if (rest.length < 3) return box(const Text('prompt(integrate, "f(x)", a, b)', style: TextStyle(color: Colors.white54)));
         final lo = double.tryParse(rest[1]) ?? 0, hi = double.tryParse(rest[2]) ?? 1;
         return box(Text('∫ ${rest[0]} dx from ${rest[1]} to ${rest[2]} = ${Maths.integrate(rest[0], lo, hi)}',
-            style: const TextStyle(color: Color(0xFF7FD8B5), fontFamily: 'monospace')));
+            style: const TextStyle(color: AssimilisBrand.mint, fontFamily: 'monospace')));
       default:
         return box(Text(call, style: const TextStyle(color: Colors.white54, fontFamily: 'monospace')));
     }
