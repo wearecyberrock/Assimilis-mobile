@@ -19,6 +19,14 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: Install a modern glslc for llama.cpp Vulkan shaders
+        # The NDK's glslc is too old for ggml-vulkan's cooperative-matrix
+        # shaders; the llama plugin's CMake looks for glslc in /usr/local/bin.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y glslc
+          sudo ln -sf "$(command -v glslc)" /usr/local/bin/glslc
+          glslc --version
       - run: flutter pub get
       - name: Build release APK (arm64, debug-signed for personal install)
         env:
