@@ -77,7 +77,7 @@ object SafetyGate {
     ) {
         if (isFullAllow(service)) { action(); return }
         dismiss(service)
-        val wm = service.getSystemService(AccessibilityService.WINDOW_SERVICE) as WindowManager
+        val wm = service.getSystemService(android.content.Context.WINDOW_SERVICE) as WindowManager
         var answered = false
 
         fun dp(v: Int) = TypedValue.applyDimension(
@@ -170,7 +170,7 @@ object SafetyGate {
         val v = showing ?: return
         showing = null
         try {
-            (service.getSystemService(AccessibilityService.WINDOW_SERVICE) as WindowManager).removeView(v)
+            (service.getSystemService(android.content.Context.WINDOW_SERVICE) as WindowManager).removeView(v)
         } catch (_: Exception) {
         }
     }

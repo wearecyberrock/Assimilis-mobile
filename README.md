@@ -42,7 +42,7 @@ cd C:\Users\shaki\Documents\AssimilisMobile\app
 ```
 
 ```powershell
-$env:Path = "C:\Users\shaki\flutter\bin;$env:Path"; $env:ASSIMILIS_ALLOW_DEBUG_RELEASE_SIGNING = "true"; flutter build apk --release --target-platform android-arm64
+$env:Path = "C:\Users\shaki\flutter\bin;$env:Path"; $env:ASSIMILIS_ALLOW_DEBUG_RELEASE_SIGNING = "true"; flutter build apk --release --target-platform android-arm64 --android-skip-build-dependency-validation
 ```
 
 The APK is written to `build\app\outputs\flutter-apk\app-release.apk`.

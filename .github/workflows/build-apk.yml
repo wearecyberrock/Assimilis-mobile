@@ -23,7 +23,7 @@ jobs:
       - name: Build release APK (arm64, debug-signed for personal install)
         env:
           ASSIMILIS_ALLOW_DEBUG_RELEASE_SIGNING: "true"
-        run: flutter build apk --release --target-platform android-arm64
+        run: flutter build apk --release --target-platform android-arm64 --android-skip-build-dependency-validation
       - uses: actions/upload-artifact@v4
         with:
           name: assimilis-mobile-apk
