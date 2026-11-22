@@ -37,6 +37,9 @@ android {
 
     packaging {
         jniLibs {
+            // Extract native libs to disk on install (was
+            // android:extractNativeLibs="true", which AGP 9 rejects).
+            useLegacyPackaging = true
             // llama.cpp armv9 (SVE2/SME) CPU variants abort on some phones
             // (Pixel 8); the loader never picks them, so don't ship them.
             excludes += setOf("**/libggml-cpu-android_armv9*.so")
