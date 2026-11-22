@@ -1,0 +1,31 @@
+{"version": 1,
+ "branches": [
+  {"id": "flesh", "name": "Flesh", "stats": [
+    {"id": "flesh.strength", "name": "Strength", "short": "STR"},
+    {"id": "flesh.endurance", "name": "Endurance", "short": "END"},
+    {"id": "flesh.agility", "name": "Agility", "short": "AGI"},
+    {"id": "flesh.flexibility", "name": "Flexibility", "short": "FLX"},
+    {"id": "flesh.combat", "name": "Combat", "short": "CMB", "unassessed": true},
+    {"id": "flesh.vitality", "name": "Vitality", "short": "VIT"},
+    {"id": "flesh.presence", "name": "Presence", "short": "PRS"}]},
+  {"id": "mind", "name": "Mind/Soul", "stats": [
+    {"id": "mind.intellect", "name": "Intellect", "short": "INT"},
+    {"id": "mind.memory", "name": "Memory", "short": "MEM", "unassessed": true},
+    {"id": "mind.focus", "name": "Focus", "short": "FOC"},
+    {"id": "mind.communication", "name": "Communication", "short": "COM"},
+    {"id": "mind.emotional_balance", "name": "Emotional Balance", "short": "EMO"},
+    {"id": "mind.social_bond", "name": "Social Bond", "short": "SOC"}]},
+  {"id": "spirit", "name": "Spirit", "stats": [
+    {"id": "spirit.willpower", "name": "Willpower", "short": "WIL"},
+    {"id": "spirit.integrity", "name": "Integrity", "short": "ITG"},
+    {"id": "spirit.faith", "name": "Faith", "alt_name": "Purpose", "short": "FTH", "alt_short": "PUR"},
+    {"id": "spirit.growth", "name": "Growth", "short": "GRW"}]},
+  {"id": "skills", "name": "Skills", "extensible": true, "stats": [
+    {"id": "skills.math", "name": "Math", "short": "MTH"},
+    {"id": "skills.coding", "name": "Coding", "short": "COD", "unassessed": true},
+    {"id": "skills.art", "name": "Art", "short": "ART"},
+    {"id": "skills.school", "name": "School", "short": "SCH"},
+    {"id": "skills.combat_technique", "name": "Combat Technique", "short": "TEC", "unassessed": true}]},
+  {"id": "materials", "name": "Materials", "phase": 2, "stats": [
+    {"id": "materials.wealth", "name": "Wealth", "short": "WLT", "unassessed": true, "phase": 2}]}
+ ]}

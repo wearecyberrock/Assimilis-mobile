@@ -1,0 +1,38 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "stretch",
+ "name": "Stretch",
+ "domain": "fitness.mobility",
+ "kind": "duration",
+ "unit": "min",
+ "units": {
+  "min": 1,
+  "mins": 1,
+  "minutes": 1,
+  "h": 60,
+  "hr": 60,
+  "hrs": 60,
+  "hour": 60,
+  "hours": 60
+ },
+ "aliases": [
+  "stretch",
+  "stretched",
+  "stretching",
+  "yoga",
+  "mobility"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.flexibility",
+   "per": 15,
+   "gain": 0.2
+  }
+ ],
+ "typical": 90,
+ "max": 300,
+ "ui": {
+  "widget": "bar"
+ }
+}

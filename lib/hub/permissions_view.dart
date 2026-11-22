@@ -40,6 +40,8 @@ class _PermissionsViewState extends State<PermissionsView> with WidgetsBindingOb
     const _Perm('SMS', 'Send text messages.', Icons.sms_rounded, permission: Permission.sms),
     const _Perm('Notifications', 'Task progress, downloads and image generation.', Icons.notifications_rounded,
         permission: Permission.notification),
+    const _Perm('Exact alarms', 'Reminders, deadlines and quests on time.', Icons.alarm_on_rounded,
+        permission: Permission.scheduleExactAlarm),
     const _Perm('Camera', 'Photos for vision models and QR codes.', Icons.photo_camera_rounded,
         permission: Permission.camera),
     const _Perm('All files', 'Import models and read/write documents in storage.', Icons.folder_rounded,

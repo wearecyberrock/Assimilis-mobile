@@ -1,0 +1,25 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "spelling_quiz",
+ "name": "Spelling Quiz",
+ "domain": "mind.communication",
+ "kind": "quiz",
+ "unit": "score",
+ "range": [
+  0,
+  100
+ ],
+ "feeds": [
+  {
+   "stat": "mind.communication",
+   "per": 1,
+   "gain": 0.2,
+   "mid": 60
+  }
+ ],
+ "max": 100,
+ "ui": {
+  "widget": "quiz"
+ }
+}

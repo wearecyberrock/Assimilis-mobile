@@ -1,0 +1,32 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "assignment",
+ "name": "Assignments",
+ "domain": "school",
+ "kind": "count",
+ "unit": "task",
+ "requires": "student",
+ "aliases": [
+  "assignment",
+  "assignments",
+  "homework"
+ ],
+ "feeds": [
+  {
+   "stat": "skills.school",
+   "per": 1,
+   "gain": 0.3
+  },
+  {
+   "stat": "spirit.willpower",
+   "per": 1,
+   "gain": 0.05
+  }
+ ],
+ "typical": 4,
+ "max": 20,
+ "ui": {
+  "widget": "bar"
+ }
+}

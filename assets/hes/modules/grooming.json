@@ -1,0 +1,27 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "grooming",
+ "name": "Grooming",
+ "domain": "health.presence",
+ "kind": "boolean",
+ "unit": "day",
+ "aliases": [
+  "groomed",
+  "haircut",
+  "skincare",
+  "shaved",
+  "ironed my clothes"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.presence",
+   "per": 1,
+   "gain": 0.15
+  }
+ ],
+ "max": 1,
+ "ui": {
+  "widget": "heatmap"
+ }
+}

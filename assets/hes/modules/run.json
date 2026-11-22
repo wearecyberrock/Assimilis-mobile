@@ -1,0 +1,69 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "run",
+ "name": "Run",
+ "domain": "fitness.cardio",
+ "kind": "amount",
+ "unit": "km",
+ "units": {
+  "km": 1,
+  "k": 1,
+  "mi": 1.6,
+  "mile": 1.6,
+  "miles": 1.6,
+  "m": 0.001,
+  "min": 0.15,
+  "mins": 0.15,
+  "minutes": 0.15
+ },
+ "aliases": [
+  "run",
+  "ran",
+  "jog",
+  "jogged",
+  "running",
+  "jogging"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.endurance",
+   "per": 2,
+   "gain": 0.3
+  },
+  {
+   "stat": "flesh.agility",
+   "per": 3,
+   "gain": 0.1
+  },
+  {
+   "stat": "flesh.vitality",
+   "per": 3,
+   "gain": 0.05
+  }
+ ],
+ "missions": [
+  {
+   "type": "daily",
+   "key": "run",
+   "title": "Run {target} km",
+   "unit": "km",
+   "physical": true,
+   "difficulty": "monarch",
+   "overload": {
+    "from": "max_run_km",
+    "ratio": 0.5,
+    "min": 1,
+    "max": 10,
+    "default": 2,
+    "step": 0.5
+   }
+  }
+ ],
+ "typical": 15,
+ "max": 60,
+ "goal": 10,
+ "ui": {
+  "widget": "bar"
+ }
+}

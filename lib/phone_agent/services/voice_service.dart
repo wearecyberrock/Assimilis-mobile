@@ -1,6 +1,7 @@
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import '../../assimilis/voice/jarvis_voice.dart';
 
 class VoiceService {
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -58,13 +59,15 @@ class VoiceService {
   }
 
   /// Speak text aloud
+  /// Assimilis Mobile: the Phone Agent speaks in the Jarvis voice (Edge en-GB Ryan, phone voice offline).
   Future<void> speak(String text) async {
     if (text.isEmpty) return;
-    await _tts.speak(text);
+    await JarvisVoice.instance.speak(text);
   }
 
   /// Stop speaking
   Future<void> stopSpeaking() async {
+    await JarvisVoice.instance.stop();
     await _tts.stop();
   }
 

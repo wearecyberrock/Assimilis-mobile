@@ -1,0 +1,42 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "class_attendance",
+ "name": "Class Attendance",
+ "domain": "school",
+ "kind": "boolean",
+ "unit": "class",
+ "requires": "student",
+ "aliases": [
+  "went to class",
+  "in class",
+  "at class",
+  "attended class",
+  "attended",
+  "lecture",
+  "tutorial"
+ ],
+ "feeds": [
+  {
+   "stat": "skills.school",
+   "per": 1,
+   "gain": 0.15
+  },
+  {
+   "stat": "spirit.willpower",
+   "per": 1,
+   "gain": 0.05
+  }
+ ],
+ "relapse": [
+  {
+   "stat": "skills.school",
+   "per": 1,
+   "gain": -0.1
+  }
+ ],
+ "max": 1,
+ "ui": {
+  "widget": "heatmap"
+ }
+}

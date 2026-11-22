@@ -1,0 +1,34 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "mood",
+ "name": "Mood",
+ "domain": "mind.emotion",
+ "kind": "checkin",
+ "unit": "1-5",
+ "range": [
+  1,
+  5
+ ],
+ "aliases": [
+  "mood"
+ ],
+ "feeds": [
+  {
+   "stat": "mind.emotional_balance",
+   "per": 1,
+   "gain": 0.2,
+   "mid": 3
+  }
+ ],
+ "checkins": [
+  {
+   "at": "20:30",
+   "text": "Mood check: how was today, 1-5? Reply 'mood 4'."
+  }
+ ],
+ "max": 5,
+ "ui": {
+  "widget": "checkin"
+ }
+}

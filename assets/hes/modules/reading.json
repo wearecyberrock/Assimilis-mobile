@@ -1,0 +1,45 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "reading",
+ "name": "Reading",
+ "domain": "mind.reading",
+ "kind": "count",
+ "unit": "pages",
+ "units": {
+  "pages": 1,
+  "page": 1,
+  "pg": 1,
+  "min": 1,
+  "mins": 1,
+  "minutes": 1,
+  "chapter": 15,
+  "chapters": 15
+ },
+ "aliases": [
+  "read",
+  "reading"
+ ],
+ "feeds": [
+  {
+   "stat": "mind.intellect",
+   "per": 30,
+   "gain": 0.2
+  },
+  {
+   "stat": "mind.communication",
+   "per": 30,
+   "gain": 0.1
+  },
+  {
+   "stat": "mind.focus",
+   "per": 30,
+   "gain": 0.05
+  }
+ ],
+ "typical": 150,
+ "max": 1000,
+ "ui": {
+  "widget": "bar"
+ }
+}

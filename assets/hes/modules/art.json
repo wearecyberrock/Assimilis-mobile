@@ -1,0 +1,44 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "art",
+ "name": "Art",
+ "domain": "skills.art",
+ "kind": "duration",
+ "unit": "min",
+ "units": {
+  "min": 1,
+  "mins": 1,
+  "minutes": 1,
+  "h": 60,
+  "hr": 60,
+  "hrs": 60,
+  "hour": 60,
+  "hours": 60
+ },
+ "aliases": [
+  "drew",
+  "drawing",
+  "painted",
+  "painting",
+  "sketched",
+  "sketching"
+ ],
+ "feeds": [
+  {
+   "stat": "skills.art",
+   "per": 30,
+   "gain": 0.2
+  },
+  {
+   "stat": "spirit.growth",
+   "per": 60,
+   "gain": 0.05
+  }
+ ],
+ "typical": 360,
+ "max": 960,
+ "ui": {
+  "widget": "bar"
+ }
+}

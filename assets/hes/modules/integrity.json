@@ -1,0 +1,35 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "integrity",
+ "name": "Conduct",
+ "domain": "spirit.integrity",
+ "kind": "count",
+ "unit": "incident",
+ "desc": "Honest self-reports. The loss already includes an honesty bonus, and every report earns XP. Redemption quests recover points.",
+ "options": [
+  "unkind",
+  "lie",
+  "steal",
+  "other"
+ ],
+ "aliases": [
+  "lied",
+  "was unkind",
+  "stole",
+  "cheated"
+ ],
+ "feeds": [
+  {
+   "stat": "spirit.integrity",
+   "per": 1,
+   "gain": -0.25
+  }
+ ],
+ "xp": 5,
+ "typical": 5,
+ "max": 20,
+ "ui": {
+  "widget": "bar"
+ }
+}

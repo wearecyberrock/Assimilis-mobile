@@ -1,0 +1,55 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "sleep",
+ "name": "Sleep",
+ "domain": "health.sleep",
+ "kind": "duration",
+ "unit": "h",
+ "units": {
+  "h": 1,
+  "hr": 1,
+  "hrs": 1,
+  "hours": 1,
+  "min": 0.016666666666666666
+ },
+ "aliases": [
+  "slept",
+  "sleep"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.vitality",
+   "per": 1,
+   "gain": 0.3,
+   "band": [
+    7,
+    9.5
+   ]
+  },
+  {
+   "stat": "mind.focus",
+   "per": 1,
+   "gain": 0.1,
+   "band": [
+    7,
+    9.5
+   ]
+  },
+  {
+   "stat": "mind.emotional_balance",
+   "per": 1,
+   "gain": 0.1,
+   "band": [
+    6.5,
+    10
+   ]
+  }
+ ],
+ "typical": 12,
+ "max": 20,
+ "goal": 8,
+ "ui": {
+  "widget": "bar"
+ }
+}

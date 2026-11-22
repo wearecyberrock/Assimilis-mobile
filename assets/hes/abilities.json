@@ -1,0 +1,25 @@
+{"version": 1,
+ "abilities": [
+  {"id": "early-riser", "name": "Early Riser", "desc": "Your mornings belong to you. Unlocks the dawn questline.", "requires": {"missions": {"wake": 7}}, "requires_text": "Wake on target 7 days", "cost_ap": 1, "grants": {"title": "Early Riser", "passive": {"stat": "spirit.willpower", "pct": 3}, "questline": "dawn"}},
+  {"id": "iron-body", "name": "Iron Body", "desc": "100 push-ups is your floor now.", "requires": {"missions": {"pushups@100": 7}}, "requires_text": "100 push-up quest done 7 times", "cost_ap": 2, "grants": {"title": "Iron Body", "passive": {"stat": "flesh.strength", "pct": 5}}},
+  {"id": "first-stance", "name": "First Stance", "desc": "You know how to stand and move. Unlocks the combat questline.", "requires": {"stat": {"flesh.combat": 10}}, "requires_text": "Combat 10 or higher", "cost_ap": 1, "grants": {"questline": "combat", "passive": {"stat": "flesh.combat", "pct": 3}}},
+  {"id": "guard-up", "name": "Guard Up", "desc": "Defence drills are second nature. Spar only with a real coach.", "requires": {"events": {"combat_training:defence": 10}}, "requires_text": "10 defence drill sessions", "cost_ap": 1, "grants": {"passive": {"stat": "skills.combat_technique", "pct": 3}}},
+  {"id": "wordsmith", "name": "Wordsmith", "desc": "Your writing is clean and clear.", "requires": {"streak": {"writing": 14}, "stat": {"mind.communication": 25}}, "requires_text": "14-day writing streak and Communication 25", "cost_ap": 1, "grants": {"title": "Wordsmith", "passive": {"stat": "mind.communication", "pct": 3}}},
+  {"id": "scholar", "name": "Scholar", "desc": "Full attendance, full focus.", "requires": {"missions": {"weekly:attendance": 1}}, "requires_text": "A week of full attendance", "cost_ap": 1, "grants": {"title": "Scholar", "passive": {"stat": "skills.school", "pct": 3}, "ui_feature": "study_planner"}},
+  {"id": "self-reliant", "name": "Self-Reliant", "desc": "You try first and ask AI to teach, not to do.", "requires": {"metric": {"ai_low_weeks": 4}}, "requires_text": "AI delegate share below 30% for 4 weeks", "cost_ap": 2, "grants": {"title": "Self-Reliant", "passive": {"stat": "spirit.growth", "pct": 5}}},
+  {"id": "second-wind", "name": "Second Wind", "desc": "Your lungs keep up with your will.", "requires": {"streak": {"run": 7}}, "requires_text": "Run 7 days in a row", "cost_ap": 1, "grants": {"passive": {"stat": "flesh.endurance", "pct": 3}}},
+  {"id": "unbroken", "name": "Unbroken", "desc": "30 clean days on a habit you quit.", "requires": {"streak": {"abstain-*": 30}}, "requires_text": "30-day abstain streak", "cost_ap": 1, "grants": {"title": "Unbroken", "passive": {"stat": "spirit.willpower", "pct": 5}}},
+  {"id": "still-water", "name": "Still Water", "desc": "Daily devotion or reflection keeps you steady.", "requires": {"streak": {"devotion|purpose_reflection": 14}}, "requires_text": "14-day devotion or reflection streak", "cost_ap": 1, "grants": {"passive": {"stat": "spirit.faith", "pct": 3}}},
+  {"id": "deep-sleeper", "name": "Deep Sleeper", "desc": "Rest is training too.", "requires": {"missions": {"weekly:sleep": 2}}, "requires_text": "Two weeks averaging 7 h of sleep", "cost_ap": 1, "grants": {"passive": {"stat": "flesh.vitality", "pct": 3}}},
+  {"id": "awakened-will", "name": "Awakened Will", "desc": "Reach level 10.", "requires": {"level": 10}, "requires_text": "Level 10", "cost_ap": 2, "grants": {"title": "Awakened Will", "ui_feature": "limit_break"}},
+  {"id": "steward", "name": "Steward", "desc": "Money flows where you send it. Comes with Gmail money tracking.", "requires": {"missions": {"weekly:money-days": 4}}, "requires_text": "Track your money 5 days a week, 4 weeks", "cost_ap": 1, "grants": {"title": "Steward"}}
+ ],
+ "titles": [
+  {"id": "novice", "name": "Novice", "requires": {}},
+  {"id": "awakened-one", "name": "Awakened One", "requires": {"level": 5}},
+  {"id": "hunter", "name": "Hunter", "requires": {"missions": {"pushups@100": 1}}},
+  {"id": "early-bird", "name": "Early Bird", "requires": {"missions": {"wake": 30}}},
+  {"id": "iron-will", "name": "Iron Will", "requires": {"streak": {"abstain-*": 30}}},
+  {"id": "honest-one", "name": "Honest One", "requires": {"missions": {"redemption": 1}}},
+  {"id": "monarch-candidate", "name": "Monarch Candidate", "requires": {"level": 25}}
+ ]}

@@ -1,0 +1,52 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "devotion",
+ "name": "Devotion",
+ "domain": "spirit.faith",
+ "kind": "boolean",
+ "unit": "day",
+ "requires": "faith",
+ "aliases": [
+  "prayed",
+  "pray",
+  "prayer",
+  "devotion",
+  "devotions",
+  "read bible",
+  "read my bible",
+  "bible",
+  "quiet time",
+  "church",
+  "worship"
+ ],
+ "feeds": [
+  {
+   "stat": "spirit.faith",
+   "per": 1,
+   "gain": 0.2
+  },
+  {
+   "stat": "mind.emotional_balance",
+   "per": 1,
+   "gain": 0.05
+  }
+ ],
+ "missions": [
+  {
+   "type": "daily",
+   "key": "devotion",
+   "title": "Prayer / devotion",
+   "target": 1,
+   "unit": "check"
+  }
+ ],
+ "milestones": [
+  7,
+  30
+ ],
+ "max": 1,
+ "ui": {
+  "widget": "heatmap"
+ }
+}

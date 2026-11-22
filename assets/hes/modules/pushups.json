@@ -1,0 +1,57 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "pushups",
+ "name": "Push-ups",
+ "domain": "fitness.strength",
+ "kind": "count",
+ "unit": "reps",
+ "aliases": [
+  "pushups",
+  "push-ups",
+  "push ups",
+  "pushup",
+  "push-up",
+  "push up",
+  "press ups",
+  "press-ups"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.strength",
+   "per": 50,
+   "gain": 0.3
+  },
+  {
+   "stat": "flesh.endurance",
+   "per": 100,
+   "gain": 0.1
+  }
+ ],
+ "missions": [
+  {
+   "type": "daily",
+   "key": "pushups",
+   "title": "Do {target} push-ups",
+   "unit": "reps",
+   "physical": true,
+   "overload": {
+    "from": "max_pushups",
+    "ratio": 0.6,
+    "min": 10,
+    "max": 100,
+    "default": 20
+   }
+  }
+ ],
+ "typical": 150,
+ "max": 1000,
+ "goal": 100,
+ "milestones": [
+  50,
+  100
+ ],
+ "ui": {
+  "widget": "bar"
+ }
+}

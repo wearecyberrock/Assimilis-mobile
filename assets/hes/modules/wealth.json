@@ -1,0 +1,16 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "wealth",
+ "name": "Wealth Score",
+ "domain": "materials.wealth",
+ "kind": "score",
+ "unit": "score",
+ "range": [0, 100],
+ "sensor": true,
+ "xp": 0,
+ "desc": "Daily from your money: budgets kept over the last 7 days and your savings rate over 30. Moves Wealth once it is unlocked.",
+ "feeds": [{"stat": "materials.wealth", "per": 1, "gain": 0.3, "mid": 50}],
+ "aliases": [],
+ "ui": {"widget": "gauge"}
+}

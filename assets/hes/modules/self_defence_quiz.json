@@ -1,0 +1,25 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "self_defence_quiz",
+ "name": "Self-Defence Quiz",
+ "domain": "fitness.combat",
+ "kind": "quiz",
+ "unit": "score",
+ "range": [
+  0,
+  100
+ ],
+ "feeds": [
+  {
+   "stat": "skills.combat_technique",
+   "per": 1,
+   "gain": 0.2,
+   "mid": 60
+  }
+ ],
+ "max": 100,
+ "ui": {
+  "widget": "quiz"
+ }
+}

@@ -1,0 +1,205 @@
+import 'dart:convert';
+
+import '../phone_agent/models/agent_action.dart';
+import '../phone_agent/services/action_handler.dart';
+import '../phone_agent/services/ai_service.dart';
+import 'canvas/maths.dart';
+import 'canvas/notes_store.dart';
+import 'hes/hes_store.dart';
+import 'reach/agent_reach.dart';
+import 'reminders.dart';
+import 'uwi/uwi_client.dart';
+
+/// Tools the Assimilis brain (Jarvis) can call. OpenAI function-calling schemas + handlers.
+class AssimilisTools {
+  static Map<String, dynamic> _fn(String name, String desc, Map<String, dynamic> props, [List<String> req = const []]) => {
+        'type': 'function',
+        'function': {
+          'name': name,
+          'description': desc,
+          'parameters': {'type': 'object', 'properties': props, 'required': req},
+        },
+      };
+  static const _s = {'type': 'string'};
+  static const _n = {'type': 'number'};
+
+  static final schemas = [
+    _fn('set_alarm', 'Set a real alarm in the phone\'s Clock app.', {'hour': _n, 'minute': _n, 'label': _s}, ['hour', 'minute']),
+    _fn('set_timer', 'Start a countdown timer in the Clock app.', {'seconds': _n, 'label': _s}, ['seconds']),
+    _fn('set_reminder', 'Schedule a reminder notification. when = ISO 8601 local time. repeat: none|daily|weekly|weekdays.',
+        {'title': _s, 'when': _s, 'repeat': _s}, ['title', 'when']),
+    _fn('list_reminders', 'List upcoming reminders with their ids.', {}),
+    _fn('cancel_reminder', 'Cancel a reminder by id.', {'id': _n}, ['id']),
+    _fn('show_alarms', 'Open the Clock app alarm list.', {}),
+    _fn('create_note', 'Create a Canvas note page. Markdown with \$LaTeX\$ and prompt(graph, "f(x)") / prompt(math, "expr") blocks allowed.',
+        {'title': _s, 'content': _s, 'notebook': _s, 'section': _s}, ['title', 'content']),
+    _fn('search_notes', 'Search Canvas notes; returns titles, ids and snippets.', {'query': _s}, ['query']),
+    _fn('read_note', 'Read a Canvas page by id.', {'id': _s}, ['id']),
+    _fn('append_note', 'Append markdown to an existing Canvas page by id.', {'id': _s, 'content': _s}, ['id', 'content']),
+    _fn('calculate', 'Evaluate a maths expression exactly (supports sqrt, sin, cos, tan, ln, log, ^, pi, e).', {'expression': _s}, ['expression']),
+    _fn('derivative', 'Symbolic derivative with respect to x.', {'expression': _s}, ['expression']),
+    _fn('integral', 'Numeric definite integral of f(x) from a to b.', {'expression': _s, 'a': _n, 'b': _n}, ['expression', 'a', 'b']),
+    _fn('hes_log', 'Log a HES activity in plain words, e.g. "30 pushups", "studied 45 min", "slept 7 h".', {'text': _s}, ['text']),
+    _fn('hes_status', 'HES level, rank, class, power, XP, coins and open quests.', {}),
+    _fn('hes_quests', 'Today\'s HES quests with progress.', {}),
+    _fn('uwi_deadlines', 'Upcoming UWI (Mona VLE) assignment and quiz deadlines. sync=true refreshes from the VLE.', {'sync': {'type': 'boolean'}}),
+    _fn('uwi_courses', 'The owner\'s current UWI courses.', {}),
+    _fn('uwi_announcements', 'Recent UWI course announcements.', {}),
+    _fn('web_search', 'Search the web (Agent Reach / Exa).', {'query': _s}, ['query']),
+    _fn('read_url', 'Read a web page, GitHub repo, YouTube video (captions) or Reddit thread as text.', {'url': _s}, ['url']),
+    _fn('github', 'GitHub repo info + README ("owner/repo") or a repo search.', {'query': _s}, ['query']),
+    _fn('reddit', 'Hot posts of a subreddit ("r/name") or a Reddit post URL.', {'target': _s}, ['target']),
+    _fn('rss', 'Latest items of an RSS/Atom feed.', {'url': _s}, ['url']),
+    _fn('phone_task', 'Operate the phone screen to do a multi-step job in other apps (open apps, tap, type, scroll). '
+        'Risky steps ask the owner on screen unless Full allow is on.', {'task': _s}, ['task']),
+  ];
+
+  static String statusFor(String name) => switch (name) {
+        'set_alarm' => 'Setting an alarm…',
+        'set_timer' => 'Starting a timer…',
+        'set_reminder' => 'Setting a reminder…',
+        'create_note' || 'append_note' => 'Writing to Canvas…',
+        'search_notes' || 'read_note' => 'Checking your notes…',
+        'calculate' || 'derivative' || 'integral' => 'Calculating…',
+        'hes_log' || 'hes_status' || 'hes_quests' => 'Updating HES…',
+        'uwi_deadlines' || 'uwi_courses' || 'uwi_announcements' => 'Checking the VLE…',
+        'web_search' => 'Searching the web…',
+        'read_url' || 'github' || 'reddit' || 'rss' => 'Reading…',
+        'phone_task' => 'Working on your phone…',
+        _ => 'Working…',
+      };
+
+  static num _num(dynamic v, [num d = 0]) => v is num ? v : num.tryParse('$v') ?? d;
+
+  static Future<String> run(String name, Map<String, dynamic> a) async {
+    try {
+      final r = Reminders.instance;
+      final notes = NotesStore.instance;
+      switch (name) {
+        case 'set_alarm':
+          return await r.alarm(_num(a['hour']).toInt(), _num(a['minute']).toInt(), label: a['label']);
+        case 'set_timer':
+          return await r.timer(_num(a['seconds']).toInt(), label: a['label']);
+        case 'set_reminder':
+          final when = DateTime.tryParse('${a['when']}');
+          if (when == null) return 'Could not read the time "${a['when']}". Use ISO 8601.';
+          return await r.add('${a['title']}', when, repeat: '${a['repeat'] ?? 'none'}', source: 'jarvis');
+        case 'list_reminders':
+          final list = await r.list();
+          return list.isEmpty
+              ? 'No reminders.'
+              : list.map((x) => '#${x.id} ${x.title} at ${x.at.toIso8601String()} (${x.repeat})').join('\n');
+        case 'cancel_reminder':
+          return await r.cancel(_num(a['id']).toInt());
+        case 'show_alarms':
+          return await r.showAlarms();
+        case 'create_note':
+          await notes.load();
+          final p = await notes.quickNote('${a['title']}', '${a['content']}',
+              book: '${a['notebook'] ?? 'Inbox'}', section: '${a['section'] ?? 'Notes'}');
+          return 'Created note ${p['id']} "${p['title']}" in ${a['notebook'] ?? 'Inbox'}.';
+        case 'search_notes':
+          await notes.load();
+          final hits = notes.search('${a['query']}').take(8);
+          return hits.isEmpty
+              ? 'No notes match.'
+              : hits.map((h) {
+                  final t = '${h.page['text']}'.replaceAll('\n', ' ');
+                  return '${h.page['id']} · ${h.book['name']} › ${h.section['name']} › ${h.page['title']}: '
+                      '${t.length > 140 ? t.substring(0, 140) : t}';
+                }).join('\n');
+        case 'read_note':
+          await notes.load();
+          final f = notes.find('${a['id']}');
+          if (f == null) return 'No page with id ${a['id']}.';
+          return '# ${f.page['title']}\n${f.page['text']}\n'
+              '${(f.page['nodes'] as List).map((n) => '- card: ${n['text']}').join('\n')}';
+        case 'append_note':
+          await notes.load();
+          final f = notes.find('${a['id']}');
+          if (f == null) return 'No page with id ${a['id']}.';
+          f.page['text'] = '${f.page['text']}\n\n${a['content']}';
+          await notes.touch(f.page);
+          return 'Added to "${f.page['title']}".';
+        case 'calculate':
+          return '${a['expression']} = ${Maths.calc('${a['expression']}')}';
+        case 'derivative':
+          return 'd/dx ${a['expression']} = ${Maths.derive('${a['expression']}')}';
+        case 'integral':
+          return Maths.integrate('${a['expression']}', _num(a['a']).toDouble(), _num(a['b']).toDouble());
+        case 'hes_log':
+          return await HesStore.instance.quickLog('${a['text']}', source: 'jarvis') ??
+              'No HES tracker matched "${a['text']}".';
+        case 'hes_status':
+          return await HesStore.instance.status();
+        case 'hes_quests':
+          final q = await HesStore.instance.quests();
+          return q.map((x) => '${x['claimed'] == true ? '✔' : '•'} ${x['title']} (${x['done']}/${x['target']})').join('\n');
+        case 'uwi_deadlines':
+          final snap = a['sync'] == true ? await UwiClient.instance.sync() : await UwiClient.cached() ?? await UwiClient.instance.sync();
+          final list = List<Map>.from(snap['deadlines'] ?? const [])..sort((x, y) => '${x['at']}'.compareTo('${y['at']}'));
+          return list.isEmpty ? 'No upcoming deadlines.' : list.map((d) => '${d['course']}: ${d['name']} due ${d['at']}').join('\n');
+        case 'uwi_courses':
+          final snap = await UwiClient.cached() ?? await UwiClient.instance.sync();
+          return (snap['courses'] as List).map((c) => '${c['code']}: ${c['name']}').join('\n');
+        case 'uwi_announcements':
+          final snap = await UwiClient.cached() ?? await UwiClient.instance.sync();
+          final list = List<Map>.from(snap['announcements'] ?? const []);
+          return list.isEmpty ? 'No announcements.' : list.map((x) => '${x['course']}: ${x['title']} (${x['author']})').join('\n');
+        case 'web_search':
+          return await AgentReach.search('${a['query']}');
+        case 'read_url':
+          return await AgentReach.read('${a['url']}');
+        case 'github':
+          return await AgentReach.github('${a['query']}');
+        case 'reddit':
+          return await AgentReach.reddit('${a['target']}');
+        case 'rss':
+          return await AgentReach.rss('${a['url']}');
+        case 'phone_task':
+          final ai = AiService();
+          await ai.init();
+          final res = await ActionHandler().execute(
+            AgentAction(action: 'execute_task', params: {'goal': '${a['task']}'}, response: ''),
+            aiService: ai,
+          );
+          return res.details ?? (res.success ? 'Done.' : 'The phone task failed.');
+        default:
+          return 'Unknown tool $name.';
+      }
+    } catch (e) {
+      return 'Error in $name: $e';
+    }
+  }
+
+  /// Offline, without tool calling: handle the commonest spoken commands directly.
+  static Future<String?> offlineIntent(String text) async {
+    final t = text.toLowerCase().trim();
+    final timer = RegExp(r'timer (?:for )?(\d+)\s*(second|sec|minute|min|hour)').firstMatch(t);
+    if (timer != null) {
+      final n = int.parse(timer.group(1)!);
+      final unit = timer.group(2)!;
+      return Reminders.instance.timer(unit.startsWith('h') ? n * 3600 : unit.startsWith('m') ? n * 60 : n);
+    }
+    final alarm = RegExp(r'alarm (?:for |at )?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?').firstMatch(t);
+    if (alarm != null) {
+      var h = int.parse(alarm.group(1)!);
+      final m = int.tryParse(alarm.group(2) ?? '0') ?? 0;
+      if (alarm.group(3) == 'pm' && h < 12) h += 12;
+      if (alarm.group(3) == 'am' && h == 12) h = 0;
+      return Reminders.instance.alarm(h, m);
+    }
+    final calc = RegExp(r'^(?:what is|calculate|compute)\s+(.+?)\??$').firstMatch(t);
+    if (calc != null && RegExp(r'[\d)]').hasMatch(calc.group(1)!)) {
+      final r = Maths.calc(calc.group(1)!.replaceAll('times', '*').replaceAll('plus', '+').replaceAll('minus', '-'));
+      if (!r.startsWith('Could not')) return '${calc.group(1)} is $r.';
+    }
+    if (t.startsWith('hes status') || t == 'my stats') return HesStore.instance.status();
+    if (RegExp(r'^(i |log |did |just )').hasMatch(t)) {
+      return HesStore.instance.quickLog(text, source: 'jarvis');
+    }
+    return null;
+  }
+
+  static String pretty(Object o) => const JsonEncoder.withIndent('  ').convert(o);
+}

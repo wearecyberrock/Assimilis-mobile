@@ -1,0 +1,34 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "vocabulary",
+ "name": "Vocabulary",
+ "domain": "mind.communication",
+ "kind": "score",
+ "unit": "score",
+ "sensor": true,
+ "requires": "consent_writing",
+ "desc": "Lexical richness (MTLD) and share of rarer words in your own messages.",
+ "range": [
+  0,
+  100
+ ],
+ "feeds": [
+  {
+   "stat": "mind.communication",
+   "per": 1,
+   "gain": 0.15,
+   "mid": 50
+  },
+  {
+   "stat": "mind.intellect",
+   "per": 1,
+   "gain": 0.05,
+   "mid": 50
+  }
+ ],
+ "max": 100,
+ "ui": {
+  "widget": "gauge"
+ }
+}

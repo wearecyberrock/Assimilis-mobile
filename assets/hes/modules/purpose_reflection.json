@@ -1,0 +1,39 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "purpose_reflection",
+ "name": "Purpose Reflection",
+ "domain": "spirit.purpose",
+ "kind": "boolean",
+ "unit": "day",
+ "requires": "no_faith",
+ "aliases": [
+  "reflected",
+  "reflection",
+  "journaled",
+  "journalled",
+  "journal",
+  "journaling",
+  "meditated"
+ ],
+ "feeds": [
+  {
+   "stat": "spirit.faith",
+   "per": 1,
+   "gain": 0.2
+  },
+  {
+   "stat": "spirit.growth",
+   "per": 1,
+   "gain": 0.05
+  }
+ ],
+ "milestones": [
+  7,
+  30
+ ],
+ "max": 1,
+ "ui": {
+  "widget": "heatmap"
+ }
+}

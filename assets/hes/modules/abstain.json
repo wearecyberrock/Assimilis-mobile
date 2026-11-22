@@ -1,0 +1,44 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "abstain",
+ "name": "No {habit}",
+ "domain": "habit.abstain",
+ "kind": "abstain_streak",
+ "unit": "day",
+ "template": true,
+ "aliases": [],
+ "feeds": [
+  {
+   "stat": "spirit.willpower",
+   "per": 1,
+   "gain": 0.1
+  }
+ ],
+ "relapse": [
+  {
+   "stat": "spirit.willpower",
+   "per": 1,
+   "gain": -0.2
+  }
+ ],
+ "checkins": [
+  {
+   "at": "21:00",
+   "text": "Clean from {habit} today? Reply 'no {habit} today' or 'had {habit}'."
+  }
+ ],
+ "goal": 30,
+ "milestones": [
+  3,
+  7,
+  14,
+  30,
+  60,
+  90
+ ],
+ "max": 1,
+ "ui": {
+  "widget": "streak"
+ }
+}

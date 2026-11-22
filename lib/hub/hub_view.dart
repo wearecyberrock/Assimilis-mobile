@@ -4,6 +4,12 @@ import 'package:get/get.dart';
 import '../core/routes.dart';
 import '../phone_agent/private_agent_main.dart' show PrivateAgentApp;
 import '../workstation/pocketstrike_main.dart' show PocketStrikeApp;
+import '../assimilis/canvas/canvas_view.dart';
+import '../assimilis/hes/hes_view.dart';
+import '../assimilis/reach/reach_view.dart';
+import '../assimilis/reminders_view.dart';
+import '../assimilis/uwi/uwi_view.dart';
+import '../assimilis/voice/voice_mode_view.dart';
 import 'brand.dart';
 import 'permissions_view.dart';
 
@@ -38,6 +44,43 @@ class HubView extends StatelessWidget {
               AssimilisBrand.mascotImage(size: 56),
             ]),
             const SizedBox(height: 24),
+            _tile(
+              icon: Icons.graphic_eq_rounded,
+              title: 'Jarvis',
+              body: 'Voice mode. Talk hands-free in the Jarvis voice; it sets alarms, writes notes, logs HES, '
+                  'checks UWI deadlines, reads the web and works your phone.',
+              onTap: () => Get.to(() => const VoiceModeView()),
+            ),
+            _tile(
+              icon: Icons.draw_rounded,
+              title: 'Canvas',
+              body: 'Notebooks, sections and pages. LaTeX maths, calculator, graphs, derivatives, ink and note cards.',
+              onTap: () => Get.to(() => const CanvasView()),
+            ),
+            _tile(
+              icon: Icons.school_rounded,
+              title: 'UWI · Academic',
+              body: 'Mona VLE courses, deadlines and announcements. One tap turns a deadline into reminders.',
+              onTap: () => Get.to(() => const UwiView()),
+            ),
+            _tile(
+              icon: Icons.military_tech_rounded,
+              title: 'HES',
+              body: 'Human Efficiency System: stats E to SSS+, level, daily quests and trackers.',
+              onTap: () => Get.to(() => const HesView()),
+            ),
+            _tile(
+              icon: Icons.alarm_rounded,
+              title: 'Alarms & Reminders',
+              body: 'Clock alarms, timers, and repeating reminders.',
+              onTap: () => Get.to(() => const RemindersView()),
+            ),
+            _tile(
+              icon: Icons.travel_explore_rounded,
+              title: 'Agent Reach',
+              body: 'Read-only web search and readers: pages, GitHub, YouTube captions, Reddit, RSS.',
+              onTap: () => Get.to(() => const ReachView()),
+            ),
             _tile(
               icon: Icons.chat_bubble_rounded,
               title: 'Chat & Models',

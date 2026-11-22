@@ -1,0 +1,21 @@
+{"version": 1, "fallback": "Awakened",
+ "classes": [
+  {"name": "Scholar-Warrior", "match": ["flesh.strength", "mind.intellect"]},
+  {"name": "Iron Monk", "match": ["spirit.willpower", "spirit.faith"]},
+  {"name": "Shadow Duelist", "match": ["flesh.agility", "flesh.combat"]},
+  {"name": "Sage", "match": ["mind.intellect", "mind.memory"]},
+  {"name": "Bard", "match": ["mind.communication", "mind.social_bond"]},
+  {"name": "Guardian", "match": ["flesh.endurance", "spirit.integrity"]},
+  {"name": "Ascetic", "match": ["spirit.willpower", "flesh.vitality"]},
+  {"name": "Artificer", "match": ["skills.coding", "mind.intellect"]},
+  {"name": "Spellblade", "match": ["flesh", "skills"]},
+  {"name": "Warrior", "match": ["flesh", "flesh"]},
+  {"name": "Paladin", "match": ["flesh", "spirit"]},
+  {"name": "Battle Mage", "match": ["flesh", "mind"]},
+  {"name": "Mystic", "match": ["spirit", "spirit"]},
+  {"name": "Scholar", "match": ["mind", "mind"]},
+  {"name": "Strategist", "match": ["mind", "spirit"]},
+  {"name": "Artisan", "match": ["skills", "skills"]},
+  {"name": "Inventor", "match": ["skills", "mind"]},
+  {"name": "Pilgrim", "match": ["skills", "spirit"]}
+ ]}

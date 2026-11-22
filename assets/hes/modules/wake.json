@@ -1,0 +1,46 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "wake",
+ "name": "Wake Up",
+ "domain": "health.sleep",
+ "kind": "boolean",
+ "unit": "day",
+ "aliases": [
+  "woke",
+  "woke up",
+  "wake up",
+  "got up",
+  "awake"
+ ],
+ "feeds": [
+  {
+   "stat": "spirit.willpower",
+   "per": 1,
+   "gain": 0.1
+  },
+  {
+   "stat": "flesh.vitality",
+   "per": 1,
+   "gain": 0.05
+  }
+ ],
+ "missions": [
+  {
+   "type": "daily",
+   "key": "wake",
+   "title": "Wake up by {time}",
+   "target": 1,
+   "unit": "check"
+  }
+ ],
+ "milestones": [
+  7,
+  30,
+  100
+ ],
+ "max": 1,
+ "ui": {
+  "widget": "heatmap"
+ }
+}

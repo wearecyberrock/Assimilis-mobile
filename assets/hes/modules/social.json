@@ -1,0 +1,28 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "social",
+ "name": "Social",
+ "domain": "mind.social",
+ "kind": "score",
+ "unit": "score",
+ "sensor": true,
+ "requires": "consent_contacts_meta",
+ "desc": "Two-way conversations and reply times from message metadata only. No contact text is stored.",
+ "range": [
+  0,
+  100
+ ],
+ "feeds": [
+  {
+   "stat": "mind.social_bond",
+   "per": 1,
+   "gain": 0.2,
+   "mid": 40
+  }
+ ],
+ "max": 100,
+ "ui": {
+  "widget": "gauge"
+ }
+}

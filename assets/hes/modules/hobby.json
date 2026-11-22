@@ -1,0 +1,41 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "hobby",
+ "name": "Hobby",
+ "domain": "skills.hobby",
+ "kind": "duration",
+ "unit": "min",
+ "units": {
+  "min": 1,
+  "mins": 1,
+  "minutes": 1,
+  "h": 60,
+  "hr": 60,
+  "hrs": 60,
+  "hour": 60,
+  "hours": 60
+ },
+ "aliases": [
+  "hobby",
+  "practised",
+  "practiced"
+ ],
+ "feeds": [
+  {
+   "stat": "spirit.growth",
+   "per": 30,
+   "gain": 0.1
+  },
+  {
+   "stat": "mind.emotional_balance",
+   "per": 30,
+   "gain": 0.05
+  }
+ ],
+ "typical": 360,
+ "max": 960,
+ "ui": {
+  "widget": "bar"
+ }
+}

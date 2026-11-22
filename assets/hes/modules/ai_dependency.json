@@ -1,0 +1,33 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "ai_dependency",
+ "name": "AI Reliance",
+ "domain": "mind.learning",
+ "kind": "ratio",
+ "unit": "request",
+ "sensor": true,
+ "desc": "Share of 'do it for me' versus 'teach me / I tried' requests to the assistant.",
+ "options": [
+  "delegate",
+  "learn",
+  "neutral"
+ ],
+ "feeds": [
+  {
+   "stat": "spirit.growth",
+   "per": 1,
+   "gain": 0.05
+  },
+  {
+   "stat": "mind.intellect",
+   "per": 1,
+   "gain": 0.03
+  }
+ ],
+ "xp": 0,
+ "max": 1,
+ "ui": {
+  "widget": "split"
+ }
+}

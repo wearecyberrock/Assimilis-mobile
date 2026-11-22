@@ -1,0 +1,42 @@
+{"version": 1,
+ "groups": [
+  {"id": "identity", "title": "Who are you?", "questions": [
+    {"id": "name", "type": "text", "label": "What should the System call you?", "required": true, "max": 40},
+    {"id": "pronouns", "type": "text", "label": "Pronouns (optional)", "max": 20},
+    {"id": "timezone", "type": "select", "label": "Timezone", "options": ["America/Jamaica", "America/New_York", "America/Toronto", "Europe/London", "UTC"], "default": "America/Jamaica"},
+    {"id": "why", "type": "text", "label": "Why are you here (one line)?", "max": 140}]},
+  {"id": "schedule", "title": "Your days", "questions": [
+    {"id": "wake_time", "type": "time", "label": "When do you usually wake up?", "default": "06:30"},
+    {"id": "sleep_time", "type": "time", "label": "When do you usually fall asleep?", "default": "23:00"},
+    {"id": "commute_min", "type": "number", "label": "Commute to your first commitment", "min": 0, "max": 240, "unit": "min", "default": 30},
+    {"id": "student", "type": "bool", "label": "Are you a student?", "default": false},
+    {"id": "classes", "type": "schedule", "label": "Class timetable", "show_if": "student"},
+    {"id": "work_blocks", "type": "schedule", "label": "Work blocks or other fixed commitments"}]},
+  {"id": "body", "title": "Flesh", "questions": [
+    {"id": "exercise_freq", "type": "select", "label": "How often do you exercise?", "options": ["never", "1-2/week", "3-4/week", "5+/week"], "default": "never"},
+    {"id": "max_pushups", "type": "number", "label": "Max push-ups in one set (optional)", "min": 0, "max": 300, "unit": "reps"},
+    {"id": "max_plank_sec", "type": "number", "label": "Longest plank (optional)", "min": 0, "max": 1800, "unit": "s"},
+    {"id": "max_run_km", "type": "number", "label": "Longest run without stopping (optional)", "min": 0, "max": 100, "unit": "km"},
+    {"id": "sleep_quality", "type": "scale", "label": "How well do you sleep?", "labels": ["Terrible", "Poor", "OK", "Good", "Great"], "default": 3},
+    {"id": "injuries", "type": "text", "label": "Any injury or physical limits? (leave blank if none)", "max": 140}]},
+  {"id": "mind", "title": "Mind and skills", "questions": [
+    {"id": "study_hours", "type": "number", "label": "Hours of study or focused work on a normal day", "min": 0, "max": 16, "unit": "h", "default": 2},
+    {"id": "hobbies", "type": "text", "label": "Hobbies", "max": 140},
+    {"id": "skills_to_grow", "type": "multi", "label": "Skills you want to grow", "options": ["math", "coding", "art", "school", "combat", "music", "languages", "writing"], "allow_other": true},
+    {"id": "focus", "type": "scale", "label": "How well can you focus?", "labels": ["Barely", "Weak", "OK", "Good", "Locked in"], "default": 3},
+    {"id": "doomscroll", "type": "scale", "label": "How much do you doom-scroll?", "labels": ["Never", "A little", "Some", "A lot", "Constantly"], "default": 3},
+    {"id": "reading", "type": "select", "label": "How often do you read books?", "options": ["never", "monthly", "weekly", "daily"], "default": "monthly"}]},
+  {"id": "spirit", "title": "Spirit and values", "questions": [
+    {"id": "faith_matters", "type": "bool", "label": "Does faith matter to you? (No switches Faith to Purpose)", "default": true},
+    {"id": "habits_to_quit", "type": "multi", "label": "Habits to quit", "options": ["soda", "junk food", "smoking", "vaping", "alcohol", "doom-scrolling", "procrastination", "gambling"], "allow_other": true},
+    {"id": "habits_to_start", "type": "multi", "label": "Habits to start", "options": ["exercise", "reading", "prayer", "journaling", "early rising", "studying", "stretching", "drawing", "coding"], "allow_other": true}]},
+  {"id": "system", "title": "System settings", "questions": [
+    {"id": "difficulty", "type": "select", "label": "Difficulty", "options": ["Casual", "Hunter", "Monarch"], "default": "Hunter"},
+    {"id": "pings", "type": "bool", "label": "Send [HES] pings on WhatsApp (at most 4 a day)?", "default": true},
+    {"id": "quiet_start", "type": "time", "label": "Quiet hours start", "default": "23:30"},
+    {"id": "quiet_end", "type": "time", "label": "Quiet hours end", "default": "05:00"},
+    {"id": "penalty_zone", "type": "bool", "label": "Penalty Zone: a failed daily doubles the next day", "default": false},
+    {"id": "consent_writing", "type": "bool", "label": "Score the writing in my own messages", "default": true},
+    {"id": "consent_contacts_meta", "type": "bool", "label": "Use my contacts' message timing (no text) for Social Bond", "default": false},
+    {"id": "consent_contacts_content", "type": "bool", "label": "Let a tool-less Claude read contacts' messages (derived items need my confirmation)", "default": false}]}
+ ]}

@@ -1,0 +1,49 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "study",
+ "name": "Study",
+ "domain": "school",
+ "kind": "duration",
+ "unit": "min",
+ "requires": "student",
+ "units": {
+  "min": 1,
+  "mins": 1,
+  "minutes": 1,
+  "h": 60,
+  "hr": 60,
+  "hrs": 60,
+  "hour": 60,
+  "hours": 60
+ },
+ "aliases": [
+  "studied",
+  "study",
+  "studying",
+  "revised",
+  "revision"
+ ],
+ "feeds": [
+  {
+   "stat": "mind.intellect",
+   "per": 60,
+   "gain": 0.2
+  },
+  {
+   "stat": "mind.focus",
+   "per": 60,
+   "gain": 0.15
+  },
+  {
+   "stat": "skills.school",
+   "per": 60,
+   "gain": 0.2
+  }
+ ],
+ "typical": 360,
+ "max": 960,
+ "ui": {
+  "widget": "bar"
+ }
+}

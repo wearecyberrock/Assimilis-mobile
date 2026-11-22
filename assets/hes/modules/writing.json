@@ -1,0 +1,28 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "writing",
+ "name": "Writing Quality",
+ "domain": "mind.communication",
+ "kind": "score",
+ "unit": "score",
+ "sensor": true,
+ "requires": "consent_writing",
+ "desc": "Daily score from your own messages: spelling, mechanics, shorthand and clarity. Patois and names are not penalised.",
+ "range": [
+  0,
+  100
+ ],
+ "feeds": [
+  {
+   "stat": "mind.communication",
+   "per": 1,
+   "gain": 0.3,
+   "mid": 70
+  }
+ ],
+ "max": 100,
+ "ui": {
+  "widget": "gauge"
+ }
+}

@@ -1,0 +1,40 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "plank",
+ "name": "Plank",
+ "domain": "fitness.core",
+ "kind": "duration",
+ "unit": "s",
+ "units": {
+  "s": 1,
+  "sec": 1,
+  "secs": 1,
+  "seconds": 1,
+  "min": 60,
+  "mins": 60,
+  "minutes": 60
+ },
+ "aliases": [
+  "plank",
+  "planked",
+  "planks"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.endurance",
+   "per": 60,
+   "gain": 0.1
+  },
+  {
+   "stat": "flesh.strength",
+   "per": 60,
+   "gain": 0.05
+  }
+ ],
+ "typical": 600,
+ "max": 3600,
+ "ui": {
+  "widget": "bar"
+ }
+}

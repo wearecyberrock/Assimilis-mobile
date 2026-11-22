@@ -1,0 +1,46 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "screen_time",
+ "name": "Phone Screen Time",
+ "domain": "mind.focus",
+ "kind": "duration",
+ "unit": "h",
+ "units": {
+  "h": 1,
+  "hr": 1,
+  "hrs": 1,
+  "hour": 1,
+  "hours": 1,
+  "min": 0.016666666666666666,
+  "mins": 0.016666666666666666,
+  "minutes": 0.016666666666666666
+ },
+ "aliases": [
+  "screen time",
+  "screentime"
+ ],
+ "desc": "Self-reported from your phone's screen-time page until a sensor exists.",
+ "feeds": [
+  {
+   "stat": "mind.focus",
+   "per": 1,
+   "gain": 0.15,
+   "band": [
+    0,
+    3
+   ]
+  }
+ ],
+ "checkins": [
+  {
+   "at": "21:30",
+   "text": "Screen time today? Reply e.g. 'screen time 4h'."
+  }
+ ],
+ "typical": 12,
+ "max": 24,
+ "ui": {
+  "widget": "bar"
+ }
+}

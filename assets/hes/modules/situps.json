@@ -1,0 +1,52 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "situps",
+ "name": "Sit-ups",
+ "domain": "fitness.strength",
+ "kind": "count",
+ "unit": "reps",
+ "aliases": [
+  "situps",
+  "sit-ups",
+  "sit ups",
+  "situp",
+  "sit-up",
+  "crunches"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.strength",
+   "per": 50,
+   "gain": 0.15
+  },
+  {
+   "stat": "flesh.endurance",
+   "per": 50,
+   "gain": 0.15
+  }
+ ],
+ "missions": [
+  {
+   "type": "daily",
+   "key": "situps",
+   "title": "Do {target} sit-ups",
+   "unit": "reps",
+   "physical": true,
+   "difficulty": "hunter",
+   "overload": {
+    "from": "max_pushups",
+    "ratio": 0.6,
+    "min": 10,
+    "max": 100,
+    "default": 20
+   }
+  }
+ ],
+ "typical": 200,
+ "max": 1000,
+ "goal": 100,
+ "ui": {
+  "widget": "bar"
+ }
+}

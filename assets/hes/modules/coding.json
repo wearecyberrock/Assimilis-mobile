@@ -1,0 +1,42 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "coding",
+ "name": "Coding",
+ "domain": "skills.coding",
+ "kind": "duration",
+ "unit": "min",
+ "units": {
+  "min": 1,
+  "mins": 1,
+  "minutes": 1,
+  "h": 60,
+  "hr": 60,
+  "hrs": 60,
+  "hour": 60,
+  "hours": 60
+ },
+ "aliases": [
+  "coded",
+  "coding",
+  "programmed",
+  "programming"
+ ],
+ "feeds": [
+  {
+   "stat": "skills.coding",
+   "per": 30,
+   "gain": 0.2
+  },
+  {
+   "stat": "mind.intellect",
+   "per": 60,
+   "gain": 0.1
+  }
+ ],
+ "typical": 480,
+ "max": 960,
+ "ui": {
+  "widget": "bar"
+ }
+}

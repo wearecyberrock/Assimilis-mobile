@@ -1,0 +1,49 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "squats",
+ "name": "Squats",
+ "domain": "fitness.strength",
+ "kind": "count",
+ "unit": "reps",
+ "aliases": [
+  "squats",
+  "squat",
+  "air squats"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.strength",
+   "per": 50,
+   "gain": 0.15
+  },
+  {
+   "stat": "flesh.agility",
+   "per": 50,
+   "gain": 0.1
+  }
+ ],
+ "missions": [
+  {
+   "type": "daily",
+   "key": "squats",
+   "title": "Do {target} squats",
+   "unit": "reps",
+   "physical": true,
+   "difficulty": "hunter",
+   "overload": {
+    "from": "max_pushups",
+    "ratio": 0.6,
+    "min": 10,
+    "max": 100,
+    "default": 20
+   }
+  }
+ ],
+ "typical": 200,
+ "max": 1000,
+ "goal": 100,
+ "ui": {
+  "widget": "bar"
+ }
+}

@@ -1,0 +1,65 @@
+{
+ "created_by": "system",
+ "status": "active",
+ "id": "combat_training",
+ "name": "Combat Training",
+ "domain": "fitness.combat",
+ "kind": "duration",
+ "unit": "min",
+ "desc": "Shadowboxing, footwork, defence drills and conditioning. Spar only with a real coach.",
+ "units": {
+  "min": 1,
+  "mins": 1,
+  "minutes": 1,
+  "h": 60,
+  "hr": 60,
+  "hrs": 60,
+  "hour": 60,
+  "hours": 60,
+  "rounds": 3,
+  "round": 3
+ },
+ "options": [
+  "shadowbox",
+  "footwork",
+  "defence",
+  "conditioning"
+ ],
+ "aliases": [
+  "shadowbox",
+  "shadowboxed",
+  "shadowboxing",
+  "footwork",
+  "defence drills",
+  "defense drills",
+  "combat training",
+  "boxing"
+ ],
+ "feeds": [
+  {
+   "stat": "flesh.combat",
+   "per": 20,
+   "gain": 0.2
+  },
+  {
+   "stat": "skills.combat_technique",
+   "per": 20,
+   "gain": 0.2
+  },
+  {
+   "stat": "flesh.agility",
+   "per": 20,
+   "gain": 0.1
+  },
+  {
+   "stat": "flesh.endurance",
+   "per": 30,
+   "gain": 0.1
+  }
+ ],
+ "typical": 120,
+ "max": 360,
+ "ui": {
+  "widget": "bar"
+ }
+}
