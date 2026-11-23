@@ -124,4 +124,88 @@ void main() {
       await ChatGptAuth.instance.signOut();
     }, timeout: const Timeout(Duration(seconds: 30)));
   });
+
+  group('ChatGPT with tools', () {
+    test('chat-completions turns become a Codex Responses request', () {
+      final b = ChatGptAuth.toResponsesBody([
+        {'role': 'system', 'content': 'You are A.'},
+        {
+          'role': 'user',
+          'content': [
+            {'type': 'text', 'text': 'How many calories?'},
+            {'type': 'image_url', 'image_url': {'url': 'data:image/jpeg;base64,AAAA'}},
+          ]
+        },
+        {
+          'role': 'assistant',
+          'content': '',
+          'tool_calls': [
+            {'id': 'call_1', 'type': 'function', 'function': {'name': 'hes_log', 'arguments': '{"text":"rice"}'}}
+          ]
+        },
+        {'role': 'tool', 'tool_call_id': 'call_1', 'content': 'logged'},
+      ], model: 'gpt-6-sol', tools: [
+        {'type': 'function', 'function': {'name': 'hes_log', 'description': 'Log to HES', 'parameters': {'type': 'object', 'properties': {}}}}
+      ]);
+      expect(b['instructions'], 'You are A.');
+      final input = b['input'] as List;
+      expect(input[0]['content'][1], {'type': 'input_image', 'image_url': 'data:image/jpeg;base64,AAAA'});
+      expect(input[1], {'type': 'function_call', 'call_id': 'call_1', 'name': 'hes_log', 'arguments': '{"text":"rice"}'});
+      expect(input[2], {'type': 'function_call_output', 'call_id': 'call_1', 'output': 'logged'});
+      expect((b['tools'] as List).first['name'], 'hes_log');
+      expect(b['stream'], true);
+    });
+
+    test('an agent gets tool calls back from ChatGPT through the gateway', () async {
+      secure['asm_chatgpt_tokens'] = jsonEncode({
+        'access_token': 'at',
+        'refresh_token': 'rt',
+        'expires_at': DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600,
+      });
+      Map? sent;
+      final mock = MockClient.streaming((req, bodyStream) async {
+        sent = jsonDecode(await utf8.decodeStream(bodyStream)) as Map;
+        final events = [
+          {'type': 'response.output_text.delta', 'delta': 'Logging it.'},
+          {
+            'type': 'response.output_item.done',
+            'item': {'type': 'function_call', 'call_id': 'call_9', 'name': 'hes_log', 'arguments': '{"text":"30 pushups"}'}
+          },
+          {'type': 'response.completed'},
+        ];
+        return http.StreamedResponse(Stream.value(utf8.encode(events.map((e) => 'data: ${jsonEncode(e)}\n\n').join())), 200,
+            headers: {'content-type': 'text/event-stream'});
+      });
+      await ModelGateway.instance.stop();
+      await http.runWithClient(() async {
+        await ModelGateway.instance.start(); // its handlers now use the mocked ChatGPT
+        final c = HttpClient();
+        final r = await c.postUrl(Uri.parse('${ModelGateway.baseUrl}/chat/completions'));
+        r.headers.set('Authorization', 'Bearer ${await ModelGateway.instance.token()}');
+        r.headers.contentType = ContentType.json;
+        r.write(jsonEncode({
+          'model': 'chatgpt/gpt-6-sol',
+          'messages': [
+            {'role': 'system', 'content': 'You are A.'},
+            {'role': 'user', 'content': 'I did 30 pushups'},
+          ],
+          'tools': [
+            {'type': 'function', 'function': {'name': 'hes_log', 'description': 'Log to HES', 'parameters': {'type': 'object', 'properties': {}}}}
+          ],
+        }));
+        final res = await r.close();
+        expect(res.statusCode, 200);
+        final d = jsonDecode(await utf8.decodeStream(res));
+        final msg = d['choices'][0]['message'];
+        expect(d['choices'][0]['finish_reason'], 'tool_calls');
+        expect(msg['content'], 'Logging it.');
+        expect(msg['tool_calls'][0]['function']['name'], 'hes_log');
+        expect(msg['tool_calls'][0]['id'], 'call_9');
+      }, () => mock);
+      await ModelGateway.instance.stop();
+      expect(sent!['model'], 'gpt-6-sol');
+      expect(sent!['instructions'], 'You are A.');
+      expect((sent!['tools'] as List).single['name'], 'hes_log');
+    });
+  });
 }

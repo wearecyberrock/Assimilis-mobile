@@ -171,14 +171,27 @@ class ChatGptAuth {
     return merged['access_token'];
   }
 
-  /// One reply from the ChatGPT subscription (Responses API, streamed and collected).
+  /// One reply from the ChatGPT subscription as plain text.
   Future<String> chat(List<Map<String, String>> messages, {String system = '', String model = 'gpt-6-sol', void Function(String)? onDelta}) async {
+    final r = await complete([
+      if (system.isNotEmpty) {'role': 'system', 'content': system},
+      ...messages,
+    ], model: model, onDelta: onDelta);
+    return '${r['content'] ?? ''}'.trim();
+  }
+
+  /// A full chat-completions turn through the ChatGPT subscription (Codex Responses API), with tools.
+  ///
+  /// Takes OpenAI chat-completions [messages] (system, user with text or images, assistant with tool_calls, tool
+  /// results) and [tools], and returns an OpenAI assistant message: `{role, content, tool_calls?}`. Text is
+  /// streamed to [onDelta]. This is what lets every agent do anything (phone, HES, MCP tools) on ChatGPT.
+  Future<Map<String, dynamic>> complete(List<Map<String, dynamic>> messages,
+      {String model = 'gpt-6-sol', List? tools, dynamic toolChoice, void Function(String)? onDelta}) async {
     final token = await _accessToken();
     final t = await _load();
-    final sys = [system, for (final m in messages) if (m['role'] == 'system') m['content'] ?? ''].where((x) => x.isNotEmpty).join('\n\n');
-    messages = [for (final m in messages) if (m['role'] != 'system') m];
     final auth = _claims(t?['id_token'])['https://api.openai.com/auth'] as Map? ?? const {};
     final accountId = auth['chatgpt_account_id'] as String?;
+    final body = toResponsesBody(messages, model: model, tools: tools, toolChoice: toolChoice);
     final req = http.Request('POST', Uri.parse(responsesUrl))
       ..headers.addAll({
         'Authorization': 'Bearer $token',
@@ -189,44 +202,128 @@ class ChatGptAuth {
         'session_id': _b64url(List.generate(16, (_) => Random().nextInt(256))),
         if (accountId != null) 'chatgpt-account-id': accountId,
       })
-      ..body = jsonEncode({
-        'model': model,
-        'instructions': sys,
-        'input': [
-          for (final m in messages)
-            {
-              'type': 'message',
-              'role': m['role'] == 'assistant' ? 'assistant' : 'user',
-              'content': [
-                {'type': m['role'] == 'assistant' ? 'output_text' : 'input_text', 'text': m['content'] ?? ''}
-              ],
-            }
-        ],
-        'stream': true,
-        'store': false,
-      });
-    final res = await http.Client().send(req).timeout(const Duration(seconds: 120));
-    if (res.statusCode >= 400) {
-      final body = await res.stream.bytesToString();
-      throw Exception('ChatGPT returned ${res.statusCode}: ${body.length > 200 ? body.substring(0, 200) : body}');
-    }
-    final out = StringBuffer();
-    await for (final line in res.stream.transform(utf8.decoder).transform(const LineSplitter())) {
-      if (!line.startsWith('data:')) continue;
-      final data = line.substring(5).trim();
-      if (data.isEmpty || data == '[DONE]') continue;
-      try {
-        final ev = jsonDecode(data);
-        if (ev['type'] == 'response.output_text.delta') {
-          out.write(ev['delta']);
-          onDelta?.call('${ev['delta']}');
-        } else if (ev['type'] == 'response.failed' || ev['type'] == 'error') {
-          throw Exception('${ev['response']?['error']?['message'] ?? ev['message'] ?? 'ChatGPT error'}');
-        }
-      } on FormatException {
-        // ignore keep-alives
+      ..body = jsonEncode(body);
+    final client = http.Client();
+    try {
+      final res = await client.send(req).timeout(const Duration(seconds: 120));
+      if (res.statusCode >= 400) {
+        final b = await res.stream.bytesToString();
+        throw Exception('ChatGPT returned ${res.statusCode}: ${b.length > 200 ? b.substring(0, 200) : b}');
       }
+      final text = StringBuffer();
+      final calls = <Map<String, dynamic>>[];
+      await for (final line in res.stream.transform(utf8.decoder).transform(const LineSplitter())) {
+        if (!line.startsWith('data:')) continue;
+        final data = line.substring(5).trim();
+        if (data.isEmpty || data == '[DONE]') continue;
+        Map ev;
+        try {
+          ev = jsonDecode(data) as Map;
+        } on FormatException {
+          continue; // keep-alives
+        }
+        switch (ev['type']) {
+          case 'response.output_text.delta':
+            text.write(ev['delta']);
+            onDelta?.call('${ev['delta']}');
+          case 'response.output_item.done':
+            final item = ev['item'] as Map? ?? const {};
+            if (item['type'] == 'function_call') {
+              calls.add({
+                'id': '${item['call_id'] ?? item['id']}',
+                'type': 'function',
+                'function': {'name': '${item['name']}', 'arguments': '${item['arguments'] ?? '{}'}'},
+              });
+            }
+          case 'response.failed':
+          case 'error':
+            throw Exception('${ev['response']?['error']?['message'] ?? ev['message'] ?? 'ChatGPT error'}');
+        }
+      }
+      return {
+        'role': 'assistant',
+        'content': text.toString(),
+        if (calls.isNotEmpty) 'tool_calls': calls,
+      };
+    } finally {
+      client.close();
     }
-    return out.toString().trim();
+  }
+
+  static String _textOf(dynamic content) {
+    if (content is String) return content;
+    if (content is List) return content.map((p) => p is Map ? '${p['text'] ?? ''}' : '$p').where((x) => x.isNotEmpty).join('\n');
+    return content == null ? '' : '$content';
+  }
+
+  /// Chat-completions request → Codex Responses request (public for tests).
+  static Map<String, dynamic> toResponsesBody(List<Map<String, dynamic>> messages, {required String model, List? tools, dynamic toolChoice}) {
+    final instructions = [for (final m in messages) if (m['role'] == 'system' || m['role'] == 'developer') _textOf(m['content'])]
+        .where((x) => x.isNotEmpty)
+        .join('\n\n');
+    final input = <Map<String, dynamic>>[];
+    for (final m in messages) {
+      final role = '${m['role']}';
+      if (role == 'system' || role == 'developer') continue;
+      if (role == 'tool') {
+        input.add({'type': 'function_call_output', 'call_id': '${m['tool_call_id']}', 'output': _textOf(m['content'])});
+        continue;
+      }
+      if (role == 'assistant') {
+        final txt = _textOf(m['content']);
+        if (txt.isNotEmpty) {
+          input.add({
+            'type': 'message',
+            'role': 'assistant',
+            'content': [
+              {'type': 'output_text', 'text': txt}
+            ],
+          });
+        }
+        for (final c in (m['tool_calls'] as List? ?? const [])) {
+          final f = (c as Map)['function'] as Map? ?? const {};
+          input.add({'type': 'function_call', 'call_id': '${c['id']}', 'name': '${f['name']}', 'arguments': '${f['arguments'] ?? '{}'}'});
+        }
+        continue;
+      }
+      final content = m['content'];
+      final parts = <Map<String, dynamic>>[];
+      if (content is List) {
+        for (final p in content) {
+          if (p is! Map) continue;
+          if (p['type'] == 'image_url') {
+            final u = p['image_url'];
+            parts.add({'type': 'input_image', 'image_url': u is Map ? '${u['url']}' : '$u'});
+          } else if (p['text'] != null) {
+            parts.add({'type': 'input_text', 'text': '${p['text']}'});
+          }
+        }
+      } else {
+        parts.add({'type': 'input_text', 'text': _textOf(content)});
+      }
+      input.add({'type': 'message', 'role': 'user', 'content': parts});
+    }
+    return {
+      'model': model,
+      'instructions': instructions,
+      'input': input,
+      if (tools != null && tools.isNotEmpty) ...{
+        'tools': [
+          for (final tl in tools)
+            if (tl is Map && tl['type'] == 'function')
+              {
+                'type': 'function',
+                'name': (tl['function'] as Map)['name'],
+                'description': (tl['function'] as Map)['description'] ?? '',
+                'parameters': (tl['function'] as Map)['parameters'] ?? {'type': 'object', 'properties': {}},
+                'strict': false,
+              }
+        ],
+        'tool_choice': toolChoice is String ? toolChoice : 'auto',
+        'parallel_tool_calls': true,
+      },
+      'stream': true,
+      'store': false,
+    };
   }
 }

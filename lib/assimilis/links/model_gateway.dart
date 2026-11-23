@@ -130,10 +130,15 @@ class ModelGateway {
         return _forward(req, Uri.parse('$local/v1/chat/completions'), {...body, 'model': Get.find<InferenceService>().loadedModelName.value},
             key: Get.find<ServerController>().apiKey.value);
       case 'chatgpt':
-        return _synth(req, id, stream, (onDelta) => ChatGptAuth.instance.chat(_flatMessages(messages), model: model.isEmpty ? ChatGptAuth.models.first : model, onDelta: onDelta));
+        // Full turn with tools, images and tool results: agents can do anything on the ChatGPT subscription.
+        return _synth(req, id, stream, (onDelta) => ChatGptAuth.instance.complete(messages,
+            model: model.isEmpty ? ChatGptAuth.models.first : model, tools: body['tools'] as List?, toolChoice: body['tool_choice'], onDelta: onDelta));
       case 'hermes':
-        return _synth(req, id, stream,
-            (onDelta) => HermesLink.instance.chat(_transcript(messages), onDelta: onDelta, fresh: true, modelOverride: model == 'default' ? null : model));
+        return _synth(req, id, stream, (onDelta) async => {
+              'role': 'assistant',
+              'content': await HermesLink.instance
+                  .chat(_transcript(messages), onDelta: onDelta, fresh: true, modelOverride: model == 'default' ? null : model),
+            });
       default:
         final p = SharedProviders.all.where((x) => x.id == source).firstOrNull;
         if (p == null) {
@@ -184,18 +189,25 @@ class ModelGateway {
   }
 
   /// Answers in OpenAI's format for sources that are not OpenAI-compatible (ChatGPT sign-in, Hermes).
-  Future<void> _synth(HttpRequest req, String model, bool stream, Future<String> Function(void Function(String) onDelta) run) async {
+  /// [run] returns an assistant message (`content`, optional `tool_calls`) and streams text to its callback.
+  Future<void> _synth(HttpRequest req, String model, bool stream,
+      Future<Map<String, dynamic>> Function(void Function(String) onDelta) run) async {
     final id = 'chatcmpl-${DateTime.now().microsecondsSinceEpoch}';
     final created = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     if (!stream) {
-      final text = await run((_) {});
+      final msg = await run((_) {});
+      final calls = msg['tool_calls'] as List?;
       return _json(req, {
         'id': id,
         'object': 'chat.completion',
         'created': created,
         'model': model,
         'choices': [
-          {'index': 0, 'message': {'role': 'assistant', 'content': text}, 'finish_reason': 'stop'}
+          {
+            'index': 0,
+            'message': {'role': 'assistant', 'content': msg['content'] ?? '', if (calls != null && calls.isNotEmpty) 'tool_calls': calls},
+            'finish_reason': calls != null && calls.isNotEmpty ? 'tool_calls' : 'stop',
+          }
         ],
       });
     }
@@ -212,8 +224,17 @@ class ModelGateway {
         })}\n\n');
     chunk({'role': 'assistant', 'content': ''});
     try {
-      await run((d) => chunk({'content': d}));
-      chunk({}, 'stop');
+      final msg = await run((d) => chunk({'content': d}));
+      final calls = msg['tool_calls'] as List? ?? const [];
+      for (var i = 0; i < calls.length; i++) {
+        final c = calls[i] as Map;
+        chunk({
+          'tool_calls': [
+            {'index': i, 'id': c['id'], 'type': 'function', 'function': c['function']}
+          ]
+        });
+      }
+      chunk({}, calls.isEmpty ? 'stop' : 'tool_calls');
     } catch (e) {
       chunk({'content': '\n[error] $e'}, 'stop');
     }
@@ -228,14 +249,6 @@ class ModelGateway {
     }
     return content == null ? '' : '$content';
   }
-
-  static List<Map<String, String>> _flatMessages(List<Map<String, dynamic>> m) => [
-        for (final x in m)
-          {
-            'role': x['role'] == 'tool' ? 'user' : '${x['role']}',
-            'content': x['role'] == 'tool' ? 'Tool result: ${_text(x['content'])}' : _text(x['content']),
-          }
-      ];
 
   static String _transcript(List<Map<String, dynamic>> m) {
     if (m.length == 1) return _text(m.first['content']);

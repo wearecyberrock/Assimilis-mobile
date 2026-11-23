@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../services/inference_service.dart';
 import 'a2a/a2a.dart';
 import 'links/chatgpt_auth.dart';
+import 'links/model_gateway.dart';
 import 'links/hermes_link.dart';
 import 'settings.dart';
 import 'tools.dart';
@@ -84,14 +85,11 @@ into ISO 8601 local time yourself.''';
           case 'chatgpt':
             final quick = await AssimilisTools.offlineIntent(text);
             if (quick != null) return BrainMessage('assistant', quick, toolsUsed: const ['on phone']);
-            _history.add({'role': 'user', 'content': text});
-            final hist = [
-              for (final m in _history.where((m) => (m['role'] == 'user' || m['role'] == 'assistant') && m['content'] is String))
-                {'role': '${m['role']}', 'content': '${m['content']}'}
-            ];
-            final r = await ChatGptAuth.instance.chat(hist, system: _system(), model: s.blob('chatgpt_model') ?? ChatGptAuth.models.first);
-            _history.add({'role': 'assistant', 'content': r});
-            return BrainMessage('assistant', r.isEmpty ? 'Done.' : r, toolsUsed: const ['chatgpt']);
+            // Same tool loop as an API key, through the model gateway: ChatGPT can use every tool A has.
+            await ModelGateway.instance.start();
+            return await _askApi(text,
+                onStatus: onStatus,
+                via: (ModelGateway.baseUrl, 'chatgpt/${s.blob('chatgpt_model') ?? ChatGptAuth.models.first}', await ModelGateway.instance.token()));
           case 'api':
             return await _askApi(text, onStatus: onStatus);
           case 'device':
@@ -114,13 +112,16 @@ into ISO 8601 local time yourself.''';
 
   bool get _localReady => Get.isRegistered<InferenceService>() && Get.find<InferenceService>().isModelLoaded.value;
 
-  Future<BrainMessage> _askApi(String text, {void Function(String)? onStatus}) async {
+  /// The tool loop. [via] overrides the endpoint (base URL, model, key), e.g. the model gateway for ChatGPT.
+  Future<BrainMessage> _askApi(String text, {void Function(String)? onStatus, (String, String, String)? via}) async {
     final s = await AssimilisSettings.get();
-    final key = await s.apiKey();
+    final key = via?.$3 ?? await s.apiKey();
+    final base = (via?.$1 ?? s.baseUrl).replaceAll(RegExp(r'/+$'), '');
+    final model = via?.$2 ?? s.model;
     _history.add({'role': 'user', 'content': text});
     if (_history.length > 30) _history.removeRange(0, _history.length - 30);
 
-    if (key.isEmpty && !s.baseUrl.contains('192.168.') && !s.baseUrl.contains('localhost')) {
+    if (key.isEmpty && !base.contains('192.168.') && !base.contains('localhost')) {
       return _local(text);
     }
 
@@ -128,14 +129,14 @@ into ISO 8601 local time yourself.''';
     for (var round = 0; round < 6; round++) {
       final res = await http
           .post(
-            Uri.parse('${s.baseUrl.replaceAll(RegExp(r'/+$'), '')}/chat/completions'),
+            Uri.parse('$base/chat/completions'),
             headers: {
               'Content-Type': 'application/json',
               if (key.isNotEmpty) 'Authorization': 'Bearer $key',
               'X-Title': 'Assimilis Mobile',
             },
             body: jsonEncode({
-              'model': s.model,
+              'model': model,
               'messages': [
                 {'role': 'system', 'content': _system()},
                 ..._history,
@@ -148,7 +149,7 @@ into ISO 8601 local time yourself.''';
       if (res.statusCode >= 400) {
         _history.removeLast();
         // Some free models refuse tools: retry once without them.
-        if (round == 0 && res.body.contains('tool')) return _noTools(text, s, key);
+        if (round == 0 && res.body.contains('tool')) return _noTools(text, s, key, base, model);
         return BrainMessage('assistant', 'The model returned ${res.statusCode}: ${_short(res.body)}');
       }
       final msg = (jsonDecode(res.body)['choices'][0]['message']) as Map<String, dynamic>;
@@ -176,13 +177,13 @@ into ISO 8601 local time yourself.''';
     return BrainMessage('assistant', 'I ran several steps; check the results above.', toolsUsed: used);
   }
 
-  Future<BrainMessage> _noTools(String text, AssimilisSettings s, String key) async {
+  Future<BrainMessage> _noTools(String text, AssimilisSettings s, String key, String base, String model) async {
     _history.add({'role': 'user', 'content': text});
     final res = await http.post(
-      Uri.parse('${s.baseUrl.replaceAll(RegExp(r'/+$'), '')}/chat/completions'),
+      Uri.parse('$base/chat/completions'),
       headers: {'Content-Type': 'application/json', if (key.isNotEmpty) 'Authorization': 'Bearer $key'},
       body: jsonEncode({
-        'model': s.model,
+        'model': model,
         'messages': [
           {'role': 'system', 'content': _system()},
           ..._history.where((m) => m['role'] != 'tool' && m['tool_calls'] == null),
