@@ -32,6 +32,7 @@ import 'hub/hub_view.dart';
 import 'assimilis/models/shared_library.dart';
 import 'assimilis/a2a/a2a.dart';
 import 'assimilis/brain.dart';
+import 'assimilis/tools.dart';
 import 'assimilis/links/model_gateway.dart';
 import 'assimilis/hes/hes_background.dart';
 import 'assimilis/hes/phone_signals.dart';
@@ -163,6 +164,9 @@ void main() {
     AssimilisBrain.instance; // registers A as the answerer for other devices
     unawaited(A2a.instance.start());
     // One local endpoint so any model or key in Settings can be shared with any agent.
+    // The gateway also serves A's tools over MCP (HES, phone data, calendar, reminders…) for the other agents.
+    ModelGateway.mcpTools = () => AssimilisTools.schemas;
+    ModelGateway.mcpRun = AssimilisTools.run;
     unawaited(ModelGateway.instance.start());
     // HES System: phone data for its brain, and its background workflow (runs with the app closed).
     PhoneSignals.install();

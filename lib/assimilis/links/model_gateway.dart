@@ -35,6 +35,11 @@ class ModelGateway {
 
   HttpServer? _server;
   String? _token;
+
+  /// MCP: the tools every agent can use through `/mcp` (set at start-up to A's tool list and runner).
+  static List<Map<String, dynamic>> Function() mcpTools = () => const [];
+  static Future<String> Function(String name, Map<String, dynamic> args) mcpRun = (n, _) async => 'No tool $n.';
+  static const mcpUrl = 'http://127.0.0.1:$port/mcp';
   final _client = http.Client();
 
   bool get running => _server != null;
@@ -83,6 +88,7 @@ class ModelGateway {
           'data': [for (final id in ids) {'id': id, 'object': 'model', 'owned_by': id.split('/').first}],
         });
       }
+      if (path == '/mcp') return await _mcp(req);
       if (req.method == 'POST' && path == '/v1/chat/completions') {
         final body = jsonDecode(await utf8.decoder.bind(req).join()) as Map<String, dynamic>;
         return await _chat(req, body);
@@ -93,6 +99,82 @@ class ModelGateway {
         await _json(req, {'error': {'message': '$e'}}, status: 502);
       } catch (_) {}
     }
+  }
+
+  /// A small MCP server (Streamable HTTP, JSON responses): HES, phone, calendar, reminders, notes, reach and
+  /// device tools for the Workstation and any MCP client on this phone.
+  Future<void> _mcp(HttpRequest req) async {
+    if (req.method == 'GET') {
+      req.response.statusCode = 405; // no server-initiated stream
+      return req.response.close();
+    }
+    if (req.method == 'DELETE') {
+      req.response.statusCode = 200;
+      return req.response.close();
+    }
+    final body = jsonDecode(await utf8.decoder.bind(req).join());
+    final batch = body is List;
+    final out = <Map<String, dynamic>>[];
+    for (final m in (batch ? body : [body])) {
+      final msg = Map<String, dynamic>.from(m as Map);
+      if (msg['id'] == null) continue; // notifications
+      out.add(await _mcpOne(msg));
+    }
+    if (out.isEmpty) {
+      req.response.statusCode = 202;
+      return req.response.close();
+    }
+    req.response.headers.set('Mcp-Session-Id', 'assimilis');
+    return _json(req, batch ? out : out.single);
+  }
+
+  Future<Map<String, dynamic>> _mcpOne(Map<String, dynamic> msg) async {
+    final id = msg['id'];
+    final params = Map<String, dynamic>.from(msg['params'] as Map? ?? const {});
+    Map<String, dynamic> ok(Object result) => {'jsonrpc': '2.0', 'id': id, 'result': result};
+    switch (msg['method']) {
+      case 'initialize':
+        return ok({
+          'protocolVersion': params['protocolVersion'] ?? '2025-06-18',
+          'capabilities': {'tools': {'listChanged': false}},
+          'serverInfo': {'name': 'assimilis', 'title': 'Assimilis phone tools', 'version': '1.0.0'},
+          'instructions': 'Tools of the Assimilis phone: HES (quests, rewards, the System), calendar, health, location, '
+              'reminders, notes, web reach and other devices.',
+        });
+      case 'ping':
+        return ok({});
+      case 'tools/list':
+        return ok({
+          'tools': [
+            for (final t in mcpTools())
+              {
+                'name': (t['function'] as Map)['name'],
+                'description': (t['function'] as Map)['description'],
+                'inputSchema': (t['function'] as Map)['parameters'] ?? {'type': 'object', 'properties': {}},
+              }
+          ]
+        });
+      case 'tools/call':
+        final name = '${params['name']}';
+        final args = Map<String, dynamic>.from(params['arguments'] as Map? ?? const {});
+        try {
+          final text = await mcpRun(name, args);
+          return ok({
+            'content': [
+              {'type': 'text', 'text': text}
+            ],
+            'isError': false,
+          });
+        } catch (e) {
+          return ok({
+            'content': [
+              {'type': 'text', 'text': 'Error: $e'}
+            ],
+            'isError': true,
+          });
+        }
+    }
+    return {'jsonrpc': '2.0', 'id': id, 'error': {'code': -32601, 'message': 'Method not found: ${msg['method']}'}};
   }
 
   /// Every model the gateway can serve right now, as `<source>/<model>`.

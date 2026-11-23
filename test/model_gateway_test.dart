@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mcp_dart/mcp_dart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -37,7 +38,16 @@ void main() {
   });
 
   group('model gateway', () {
-    setUpAll(() async => ModelGateway.instance.start());
+    setUpAll(() async {
+      ModelGateway.mcpTools = () => [
+            {
+              'type': 'function',
+              'function': {'name': 'hes_status', 'description': 'HES status', 'parameters': {'type': 'object', 'properties': {}}}
+            }
+          ];
+      ModelGateway.mcpRun = (n, a) async => n == 'hes_status' ? 'Level 3' : throw Exception('no $n');
+      await ModelGateway.instance.start();
+    });
     tearDownAll(() async => ModelGateway.instance.stop());
 
     Future<HttpClientResponse> call(String method, String path, {String? token, Object? body}) async {
@@ -75,6 +85,40 @@ void main() {
       });
       expect(r.statusCode, 404);
       expect(await utf8.decodeStream(r), contains('Unknown model'));
+    });
+
+    test('serves the Assimilis tools over MCP', () async {
+      final t = await ModelGateway.instance.token();
+      Future<dynamic> rpc(Object body) async {
+        final r = await call('POST', '/mcp', token: t, body: body);
+        return r.statusCode == 202 ? null : jsonDecode(await utf8.decodeStream(r));
+      }
+
+      final init = await rpc({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {'protocolVersion': '2025-06-18'}});
+      expect(init['result']['serverInfo']['name'], 'assimilis');
+      expect(await rpc({'jsonrpc': '2.0', 'method': 'notifications/initialized'}), isNull);
+      final list = await rpc({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list'});
+      expect(list['result']['tools'].single['name'], 'hes_status');
+      final call1 = await rpc({'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call', 'params': {'name': 'hes_status', 'arguments': {}}});
+      expect(call1['result']['content'][0]['text'], 'Level 3');
+      final bad = await rpc({'jsonrpc': '2.0', 'id': 4, 'method': 'tools/call', 'params': {'name': 'x', 'arguments': {}}});
+      expect(bad['result']['isError'], isTrue);
+      expect((await call('POST', '/mcp', token: 'wrong', body: {'jsonrpc': '2.0', 'id': 5, 'method': 'tools/list'})).statusCode, 401);
+    });
+
+    test('the Workstation\'s MCP client connects and calls a tool', () async {
+      final client = McpClient(const Implementation(name: 'PocketStrike', version: '1.0.0'));
+      await client
+          .connect(StreamableHttpClientTransport(Uri.parse(ModelGateway.mcpUrl),
+              opts: StreamableHttpClientTransportOptions(requestInit: {
+                'headers': {'Authorization': 'Bearer ${await ModelGateway.instance.token()}'}
+              })))
+          .timeout(const Duration(seconds: 10));
+      final tools = await client.listTools();
+      expect(tools.tools.single.name, 'hes_status');
+      final r = await client.callTool(CallToolRequest(name: 'hes_status', arguments: {}));
+      expect((r.content.first as TextContent).text, 'Level 3');
+      await client.close();
     });
 
     test('a shared provider with no key is refused with a clear message', () async {

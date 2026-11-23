@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
 
 import '../assimilis/a2a/devices_view.dart';
 import '../assimilis/canvas/canvas_view.dart';
 import '../assimilis/hes/hes_view.dart';
+import '../assimilis/links/agent_models.dart';
 import '../assimilis/links/links_view.dart';
 import '../assimilis/reach/reach_view.dart';
 import '../assimilis/reminders_view.dart';
@@ -50,6 +54,10 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _firstRun() async {
+    // Every agent gets the Assimilis tools: the Workstation through MCP.
+    try {
+      unawaited(AgentModels.ensureWorkstationTools(ProviderScope.containerOf(context, listen: false)));
+    } catch (_) {}
     final s = await AssimilisSettings.get();
     if (s.onboarded || !mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, builder: (_) => const WelcomeView()));

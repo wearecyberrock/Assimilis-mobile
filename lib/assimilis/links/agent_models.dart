@@ -8,6 +8,7 @@ import '../../controllers/settings_controller.dart';
 import '../../services/inference_service.dart';
 import '../../workstation/core/db/app_database.dart';
 import '../../workstation/core/models/chat_models.dart';
+import '../../workstation/features/mcp/application/mcp_controller.dart';
 import '../../workstation/features/providers/application/providers_controller.dart';
 import '../../workstation/features/providers/domain/provider_types.dart';
 import '../agent_loop.dart';
@@ -150,6 +151,24 @@ class AgentModels {
     }
     await _remember(agent, model);
     return model == own ? '$name is back on its own model and keys.' : '$name now uses $model.';
+  }
+
+  /// Gives the Workstation every Assimilis tool (HES, phone data, calendar, reminders, notes, reach, devices) as an
+  /// MCP server on the model gateway. Safe to call often.
+  static Future<void> ensureWorkstationTools(ProviderContainer container) async {
+    try {
+      await ModelGateway.instance.start();
+      final token = await ModelGateway.instance.token();
+      final servers = await container.read(appDatabaseProvider).mcpServersDao.watchAll().first;
+      if (servers.any((x) => x.id == 'assimilis-tools' && x.url == ModelGateway.mcpUrl)) return;
+      await container.read(mcpActionsProvider).saveServer(
+            id: 'assimilis-tools',
+            name: 'Assimilis (HES, phone, calendar)',
+            url: ModelGateway.mcpUrl,
+            transport: 'streamableHttp',
+            headers: {'Authorization': 'Bearer $token'},
+          );
+    } catch (_) {}
   }
 
   /// The endpoint an in-app brain (A's helpers, the HES System, team roles) should call for [agent].
