@@ -33,6 +33,8 @@ import 'assimilis/models/shared_library.dart';
 import 'assimilis/a2a/a2a.dart';
 import 'assimilis/brain.dart';
 import 'assimilis/links/model_gateway.dart';
+import 'assimilis/hes/hes_background.dart';
+import 'assimilis/hes/phone_signals.dart';
 import 'phone_agent/private_agent_main.dart' as phone_agent;
 import 'workstation/pocketstrike_main.dart' show sharedPreferencesProvider;
 
@@ -161,6 +163,9 @@ void main() {
     unawaited(A2a.instance.start());
     // One local endpoint so any model or key in Settings can be shared with any agent.
     unawaited(ModelGateway.instance.start());
+    // HES System: phone data for its brain, and its background workflow (runs with the app closed).
+    PhoneSignals.install();
+    unawaited(HesBackground.start().catchError((Object e) => appLog.error('[HES] background start failed', details: e)));
 
     runApp(ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],

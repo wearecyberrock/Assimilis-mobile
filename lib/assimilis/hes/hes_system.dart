@@ -429,6 +429,19 @@ class HesSystem {
   /// Extra context providers (phone signals, calendar, health): name -> snapshot. Registered by those modules.
   static final contextProviders = <String, Future<Object?> Function()>{};
 
+  /// Extra tool sets the System can use (phone data, food, calendar…): name -> (schemas, runner).
+  static final plugins = <String, (List<Map<String, dynamic>>, Future<String> Function(String, Map<String, dynamic>))>{};
+
+  static List<Map<String, dynamic>> get allTools => [...schemas, for (final p in plugins.values) ...p.$1];
+
+  static Future<String> runAny(String name, Map<String, dynamic> a, {String by = 'system'}) async {
+    if (handles(name)) return runTool(name, a, by: by);
+    for (final p in plugins.values) {
+      if (p.$1.any((s) => (s['function'] as Map)['name'] == name)) return p.$2(name, a);
+    }
+    return 'Unknown tool $name.';
+  }
+
   /// Everything the System looks at before it acts.
   Future<Map<String, dynamic>> context() async {
     final s = await _h.state();
@@ -508,7 +521,7 @@ Do not flood: a few meaningful actions per check-in. When you reply to the playe
         'content': 'Check-in reason: $reason.\nCurrent state (JSON):\n${jsonEncode(ctx)}\n\n'
             'Act now through the tools as the System would. Then reply with one short System line summarising what you did.',
       },
-    ], tools: schemas, runTool: runTool, maxRounds: 6);
+    ], tools: allTools, runTool: runAny, maxRounds: 6);
     await _h.setSetting('last_think', _now());
     if (r.text.isNotEmpty && !silent) await post(r.text, kind: 'info', silent: true);
     return r.text;
@@ -526,10 +539,9 @@ Do not flood: a few meaningful actions per check-in. When you reply to the playe
       {'role': 'system', 'content': '$persona\n\nCurrent state (JSON):\n${jsonEncode(ctx)}'},
       ...history,
       {'role': 'user', 'content': text},
-    ], tools: [...schemas, ...extraTools], runTool: (n, a) async {
-      if (_names.contains(n)) return runTool(n, a);
-      if (extraRun != null) return extraRun(n, a);
-      return 'Unknown tool $n.';
+    ], tools: [...allTools, ...extraTools], runTool: (n, a) async {
+      if (extraRun != null && extraTools.any((t) => (t['function'] as Map)['name'] == n)) return extraRun(n, a);
+      return runAny(n, a, by: 'you');
     });
   }
 

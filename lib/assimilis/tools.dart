@@ -8,6 +8,7 @@ import 'canvas/maths.dart';
 import 'canvas/notes_store.dart';
 import 'hes/hes_store.dart';
 import 'hes/hes_system.dart';
+import 'hes/phone_signals.dart';
 import 'reach/agent_reach.dart';
 import 'reminders.dart';
 
@@ -53,6 +54,8 @@ class AssimilisTools {
         'Risky steps ask the owner on screen unless Full allow is on.', {'task': _s}, ['task']),
     // HES: every agent can drive the System.
     ...HesSystem.schemas,
+    // Phone data: calendars, health, location history, screen time, next alarm.
+    ...PhoneSignals.schemas,
   ];
 
   static String statusFor(String name) => switch (name) {
@@ -77,6 +80,7 @@ class AssimilisTools {
       final r = Reminders.instance;
       final notes = NotesStore.instance;
       if (HesSystem.handles(name)) return await HesSystem.runTool(name, a, by: 'A');
+      if (PhoneSignals.handles(name)) return await PhoneSignals.runTool(name, a);
       switch (name) {
         case 'set_alarm':
           return await r.alarm(_num(a['hour']).toInt(), _num(a['minute']).toInt(), label: a['label']);
