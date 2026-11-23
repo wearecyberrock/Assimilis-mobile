@@ -4,6 +4,35 @@
 The local build crashed because this PC ran out of RAM (7.8 GB) and disk. Nothing has been run on a phone. Until
 an APK is built and installed, everything under "Merged in" is "should work", not "tested".
 
+## Sections, one Settings, and the HES System (2026-11-23, branch `hes-system`, not yet tried on a phone)
+
+APK builds run in CI (`build-apk.yml`). Unit and screenshot tests pass locally (`flutter test`).
+
+* **Five sections:** HES, Canvas, Agents (A + the three agents), Team, Settings. App icon is the Assimilis tentacle icon.
+* **Models & keys (Settings):** every agent (A, HES System, Chat & Models, Workstation, Phone Agent) shows what it uses
+  and whether it can answer. Each keeps its own models and keys, or uses any model here: a downloaded local model,
+  the ChatGPT subscription, your Hermes, or a shared key. Load downloaded models from this screen too.
+* **Model gateway:** `http://127.0.0.1:8790/v1`, loopback only, its own key. Serves `local/`, `chatgpt/`, `hermes/`
+  and shared-key models to every agent, with tool calls (ChatGPT included) and images.
+* **ChatGPT sign-in:** device code, as in Hermes: a link and a code to type there. If OpenAI refuses, turn on
+  device-code sign-in for Codex in your ChatGPT security settings.
+* **HES System:** one AI brain (any model above) in the voice of a manhwa System. No fixed coach modes: it adapts to
+  your answers, facts, logs, quests and phone data. It issues quests (daily, side, urgent, hidden, penalty) with
+  rewards and penalties (on by default), asks you questions, remembers facts, writes chronicle chapters and grants
+  achievements. A and every agent drive it through the same tools (`hes_*`).
+* **Reminders fused:** wake-up, study and training reminders become quests (penalty if missed); exams and
+  "remember X" stay reminders that still pay when marked done.
+* **Phone data:** calendars incl. Google calendars on the phone (read and write), Health Connect (sleep, steps,
+  workouts, heart rate: Google Fit and smartwatches write there), location history kept by HES, screen time,
+  next alarm. Connect in HES -> Data.
+* **Background workflow:** every ~30 min with the app closed: location sample, missed and reached quests, and
+  brain check-ins (morning briefing, every few hours, evening review with a chronicle chapter). Quiet hours respected.
+* **Awakening questionnaire** and **food photos** (calories and macros by the HES brain, logged in HES and Health
+  Connect).
+* Caveats: Health Connect must be installed (Android 14+ has it built in). Background location needs "Allow all
+  the time". Screen time needs Usage access. With the Workstation on `chatgpt/` models, tools work; on `hermes/`
+  models, Hermes uses its own tools (text only through the gateway).
+
 ## Agent to agent (A2A, 2026-11-22, not yet tried on real devices)
 
 * Every device running the app is an A2A agent (open Agent2Agent protocol): agent card at `/.well-known/agent-card.json`, JSON-RPC `message/send` at `/a2a`, port 47800.
