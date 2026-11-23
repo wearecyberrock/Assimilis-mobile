@@ -55,6 +55,12 @@ jobs:
             echo "keyPassword=$KEY_PASSWORD"
           } > android/key.properties
           echo "Signing with the permanent release key."
+      - name: More Gradle memory on CI (native debug-symbol merge ran out of heap at 3 GB)
+        # ~/.gradle/gradle.properties overrides the project's 3 GB, which stays for small local PCs.
+        run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError" >> ~/.gradle/gradle.properties
+          free -h
       - name: Build release APK (arm64)
         env:
           ASSIMILIS_ALLOW_DEBUG_RELEASE_SIGNING: "true"

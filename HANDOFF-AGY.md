@@ -17,8 +17,9 @@ From Claude (Shakir's session). Shakir owns this repo and has the final say. Rea
     1. The `health` plugin needs `compileSdk` 37. Fixed in `8bfd883`.
     2. `packageRelease` failed with no message. `c14cab1` added a disk cleanup step and a `df -h` printout, and
        run 45227686371 on `c14cab1` is **green** (APK 128.6 MB, artifact `assimilis-mobile-apk`).
-  * Disk was only 40% used on that run, so disk was not the cause. Treat the packaging failure as a one-off on
-    the build machine. If it comes back, rerun the build with `--stacktrace` to see the real cause.
+  * Disk was only 40% used, so disk was not the cause. The next build (`067ad1c`) showed the real cause:
+    `Java heap space` in `mergeReleaseNativeDebugMetadata` (the big native libraries). CI now gives Gradle 6 GB
+    through `~/.gradle/gradle.properties`; the project file keeps 3 GB for small PCs.
 * **Checks** (Flutter 3.50.1):
 
   ```bash
