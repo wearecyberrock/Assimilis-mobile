@@ -12,6 +12,7 @@ import '../assimilis/links/links_view.dart';
 import '../assimilis/reach/reach_view.dart';
 import '../assimilis/reminders_view.dart';
 import '../assimilis/settings.dart';
+import '../assimilis/team/team_view.dart';
 import '../assimilis/voice/voice_mode_view.dart';
 import '../core/routes.dart';
 import '../phone_agent/private_agent_main.dart' show PrivateAgentApp;
@@ -165,11 +166,13 @@ class AgentsView extends StatelessWidget {
       ]);
 }
 
-/// Team: the agents working together. Team tasks (manager, checker and other roles) are built on this section.
+/// Team: the agents working together on demand (manager, worker, checker and other roles), plus A2A and RAM pool.
 class TeamView extends StatelessWidget {
   const TeamView({super.key});
   @override
-  Widget build(BuildContext context) => _page('Team', 'Your agents working together, here and on your other devices.', [
+  Widget build(BuildContext context) => _page('Team', 'Start a team task with roles, or coordinate nearby devices.', [
+        const TeamTaskSection(),
+        const HudHeader('Devices & network'),
         sectionRow(Icons.hub_rounded, "Nearby A's", 'Talk to A on your other devices and pass jobs around', () => openPage(const DevicesView())),
         sectionRow(Icons.memory_rounded, 'Devices & RAM', 'Pool phones and laptops to run bigger models', () => openPage(const ClusterView())),
       ]);
