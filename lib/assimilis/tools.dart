@@ -9,6 +9,7 @@ import 'canvas/notes_store.dart';
 import 'hes/hes_store.dart';
 import 'hes/hes_system.dart';
 import 'hes/phone_signals.dart';
+import 'hes/hes_food.dart';
 import 'reach/agent_reach.dart';
 import 'reminders.dart';
 
@@ -56,6 +57,7 @@ class AssimilisTools {
     ...HesSystem.schemas,
     // Phone data: calendars, health, location history, screen time, next alarm.
     ...PhoneSignals.schemas,
+    ...HesFood.schemas,
   ];
 
   static String statusFor(String name) => switch (name) {
@@ -81,6 +83,7 @@ class AssimilisTools {
       final notes = NotesStore.instance;
       if (HesSystem.handles(name)) return await HesSystem.runTool(name, a, by: 'A');
       if (PhoneSignals.handles(name)) return await PhoneSignals.runTool(name, a);
+      if (name == 'hes_food_log' || name == 'hes_food_today') return await HesFood.runTool(name, a);
       switch (name) {
         case 'set_alarm':
           return await r.alarm(_num(a['hour']).toInt(), _num(a['minute']).toInt(), label: a['label']);

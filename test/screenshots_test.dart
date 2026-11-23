@@ -8,6 +8,8 @@ import 'package:assimilis_mobile/assimilis/canvas/notes_store.dart';
 import 'package:assimilis_mobile/assimilis/canvas/page_editor.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_store.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_view.dart';
+import 'package:assimilis_mobile/assimilis/hes/hes_system.dart';
+import 'package:assimilis_mobile/assimilis/hes/hes_questionnaire_view.dart';
 import 'package:assimilis_mobile/assimilis/links/links_view.dart';
 import 'package:assimilis_mobile/assimilis/reach/reach_view.dart';
 import 'package:assimilis_mobile/assimilis/reminders_view.dart';
@@ -123,6 +125,19 @@ void main() {
         }
       }
       await NotesStore.instance.load();
+      final sys = HesSystem.instance;
+      if ((await sys.quests()).isEmpty) {
+        final now = DateTime.now();
+        await sys.setAnswers({'name': 'Sam', 'wake_time': '06:30'});
+        await sys.issue(title: 'Wake before 6:30', type: 'daily', due: now.add(const Duration(hours: 9)), repeat: 'daily', silent: true);
+        await sys.issue(title: 'Pushups: 40', module: 'pushups', target: 40, unit: 'reps', type: 'daily', due: now.add(const Duration(hours: 6)), silent: true);
+        await sys.issue(title: 'Revise Organic Chemistry for 45 min', detail: 'Exam on Friday. Chapters 4 and 5.', type: 'urgent', due: now.add(const Duration(hours: 3)), silent: true);
+        final first = await sys.issue(title: 'Drink 2 L of water', type: 'side', silent: true);
+        await sys.complete(first['id']);
+        await sys.post('Your sleep was 5.2 h. Recovery is part of training. Lights out by 23:00 tonight.', kind: 'tip', silent: true);
+        await sys.askUser('Your calendar shows an exam on Friday. How ready do you feel?', options: ['Ready', 'Halfway', 'Not at all']);
+        await sys.addChapter('Chapter 1: The Awakening', 'Before dawn, a window opened in front of Sam. The System had chosen. Thirty push-ups later, the first quest was cleared.');
+      }
     });
   });
 
@@ -131,7 +146,12 @@ void main() {
   testWidgets('shell agents', (t) => _shot(t, const AppShell(initial: 2), '11_shell_agents'));
   testWidgets('shell team', (t) => _shot(t, const AppShell(initial: 3), '12_shell_team'));
   testWidgets('shell settings', (t) => _shot(t, const AppShell(initial: 4), '13_shell_settings'));
-  testWidgets('hes', (t) => _shot(t, const HesView(), '02_hes_status'));
+  testWidgets('hes', (t) => _shot(t, const HesView(initialTab: 'status'), '02_hes_status'));
+  testWidgets('hes system', (t) => _shot(t, const HesView(), '14_hes_system'));
+  testWidgets('hes quests', (t) => _shot(t, const HesView(initialTab: 'quests'), '15_hes_quests'));
+  testWidgets('hes story', (t) => _shot(t, const HesView(initialTab: 'story'), '16_hes_story'));
+  testWidgets('hes data', (t) => _shot(t, const HesView(initialTab: 'data'), '17_hes_data', settle: const Duration(seconds: 9)));
+  testWidgets('hes awakening', (t) => _shot(t, const HesQuestionnaireView(), '18_hes_awakening'));
   testWidgets('voice', (t) => _shot(t, const VoiceModeView(introduce: false), '03_voice_A'));
   testWidgets('canvas', (t) => _shot(t, const CanvasView(), '04_canvas'));
   testWidgets('page', (t) async {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:assimilis_mobile/assimilis/hes/hes_food.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_store.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_system.dart';
 import 'package:flutter/services.dart';
@@ -129,5 +130,17 @@ void main() {
     final tools = (firstRequest!['tools'] as List).map((t) => t['function']['name']).toList();
     expect(tools, containsAll(['hes_issue_quest', 'hes_ask_player', 'hes_set_reminder', 'hes_chronicle']));
     expect('${(firstRequest!['messages'] as List)[1]['content']}', contains('"open_quests"'));
+  });
+
+  test('a meal estimate is parsed and logged with today\'s totals', () async {
+    final meal = HesFood.parse('Here you go:\n```json\n{"name": "Rice and peas with stew chicken", "items": ['
+        '{"name": "rice and peas", "grams": 250, "kcal": 400, "protein": 10, "carbs": 70, "fat": 8}, '
+        '{"name": "stew chicken", "grams": 180, "kcal": 350, "protein": 35, "carbs": 5, "fat": 20}], "confidence": "medium"}\n```');
+    expect((meal['total'] as Map)['kcal'], 750);
+    final r = await HesFood.log(meal);
+    expect(r, startsWith('Rice and peas with stew chicken: 750 kcal'));
+    expect((await HesFood.todayTotals())['protein'], 45);
+    final s = await HesStore.instance.state(); // meal events do not break the engine
+    expect(s.level, greaterThanOrEqualTo(1));
   });
 }

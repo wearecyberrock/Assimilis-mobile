@@ -5,6 +5,7 @@ import 'package:workmanager/workmanager.dart';
 
 import 'hes_store.dart';
 import 'hes_system.dart';
+import 'hes_food.dart';
 import 'phone_signals.dart';
 
 /// The System's background workflow: every ~30 minutes Android wakes HES (even with the app closed) to sample your
@@ -79,6 +80,7 @@ void hesBackgroundDispatcher() {
     WidgetsFlutterBinding.ensureInitialized();
     DartPluginRegistrant.ensureInitialized();
     PhoneSignals.install();
+    HesFood.install();
     try {
       await HesBackground.tick();
     } catch (_) {

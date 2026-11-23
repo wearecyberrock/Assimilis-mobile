@@ -35,6 +35,7 @@ import 'assimilis/brain.dart';
 import 'assimilis/links/model_gateway.dart';
 import 'assimilis/hes/hes_background.dart';
 import 'assimilis/hes/phone_signals.dart';
+import 'assimilis/hes/hes_food.dart';
 import 'phone_agent/private_agent_main.dart' as phone_agent;
 import 'workstation/pocketstrike_main.dart' show sharedPreferencesProvider;
 
@@ -165,6 +166,7 @@ void main() {
     unawaited(ModelGateway.instance.start());
     // HES System: phone data for its brain, and its background workflow (runs with the app closed).
     PhoneSignals.install();
+    HesFood.install();
     unawaited(HesBackground.start().catchError((Object e) => appLog.error('[HES] background start failed', details: e)));
 
     runApp(ProviderScope(

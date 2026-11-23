@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
@@ -17,6 +18,9 @@ class PhoneSignals {
   static final PhoneSignals instance = PhoneSignals._();
 
   static const _ch = MethodChannel('com.assimilis/phone_data');
+
+  /// False under `flutter test` (no phone there), so snapshots return quickly.
+  static bool available = !Platform.environment.containsKey('FLUTTER_TEST');
   final _health = Health();
   bool _healthConfigured = false;
 
@@ -262,6 +266,7 @@ class PhoneSignals {
   Future<Map<String, dynamic>> snapshot() async {
     final now = DateTime.now();
     final out = <String, dynamic>{};
+    if (!available) return out;
     final alarm = await nextAlarm();
     if (alarm != null) out['next_alarm'] = alarm;
     final st = await screenTime();
@@ -272,8 +277,12 @@ class PhoneSignals {
     if (cal != null) {
       out['calendar_next_7_days'] = [for (final e in cal.take(25)) {'title': e['title'], 'start': e['start'], 'end': e['end'], 'all_day': e['all_day'], 'calendar': e['calendar']}];
     }
-    final h = await healthSummary();
-    if (h != null) out['health_today'] = h;
+    await HesStore.instance.load();
+    final connected = HesStore.instance.settings['signals_connected'] as Map? ?? const {};
+    if (connected['health'] == true) {
+      final h = await healthSummary();
+      if (h != null) out['health_today'] = h;
+    }
     final loc = await _safe(() => locationSummary());
     if (loc != null && (loc['samples'] as int) > 0) out['location'] = loc;
     return out;

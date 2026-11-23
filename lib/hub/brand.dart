@@ -101,7 +101,7 @@ class AssimilisBrand {
         backgroundColor: raised,
         selectedColor: violet.withValues(alpha: 0.3),
         side: const BorderSide(color: line),
-        labelStyle: const TextStyle(color: text),
+        labelStyle: const TextStyle(color: text, fontFamily: 'Inter'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       switchTheme: SwitchThemeData(
