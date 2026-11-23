@@ -61,22 +61,18 @@ He wants HES "perfect", in his words. Six milestones:
    * Reminders fused into HES: wake-up and study are quests; exams and "remember X" are reminders that still pay.
    * It reads and writes the phone and Google calendars.
    * A background workflow, and agents fully manipulating HES.
-4. **M4 (not started):** Canvas.
-   * Opens as the infinite canvas, with books as objects on it.
-   * Objects can hold anything: coded graphs, media, video, sound.
-   * Connection lines between objects; the AI reads the canvas.
-5. **M5 (partly done):** Team.
-   * Only when the user starts a team task, with roles such as manager (delegates) and checker (re-checks).
-   * Agent Reach MCP for all agents (see below for what's already there).
-   * Full phone ability for agents.
-6. **M6 (not started):**
-   * **WhatsApp:** an agent number (Shakir's spare number: he types it in and the app shows a pairing code) and a
-     receiver number.
-   * **VLE scan tool for UWI Mona:** must store several users' accounts, encrypted on the device, because other
-     people will use the app. `STATUS.md` says the VLE was removed as "personal to the owner"; Shakir now wants
-     it back for everyone.
-   * **QR codes:** connect HES to other HES instances (your own devices and other people's; the A2A code in
-     `lib/assimilis/a2a/` already connects devices). Also sync with the desktop by QR, key or the VPS.
+4. **M4 (done):** Canvas.
+   * Opens as the infinite canvas, with books as draggable, connectable objects on it (`lib/assimilis/canvas/`).
+   * Objects can hold anything: notes, coded graphs, media images, video, sound/audio, and code blocks (`canvas_objects.dart`).
+   * Bezier connection lines with labels between books and objects; `canvas_read` and `canvas_add_object` tools so every AI agent can read and edit the canvas.
+5. **M5 (done):** Team.
+   * User-started team tasks (`lib/assimilis/team/`): only runs when the user taps Start, with roles (Manager, Worker, Checker, Researcher, Phone Operator) and optional per-role model overrides.
+   * Uses `AgentLoop` + `AgentModels.endpointFor(...)`, hands jobs to Workstation (`workstation_task` with built-in tools), Phone Agent (`phone_task`), and nearby A2A devices, with automatic Checker verification.
+   * Agent Reach, HES, Canvas, VLE, and WhatsApp tools available across every agent (including MCP `/mcp`).
+6. **M6 (done):**
+   * **WhatsApp (`lib/assimilis/whatsapp/`):** spare agent number (pairing-code flow showing `XXXX-XXXX` for Linked Devices) + receiver number + `whatsapp_send` tool.
+   * **VLE scan tool for UWI Mona (`lib/assimilis/uwi/`):** multi-user encrypted accounts in `flutter_secure_storage`, read-only scan of courses, deadlines, announcements and course resources, plus `vle_accounts` / `vle_scan` tools.
+   * **QR codes & sync (`lib/assimilis/sync/`):** QR / pairing-key connect for your own devices (key-authenticated two-way HES merge on `/hes/sync`), other players (read-only Hunter Card on `/hes/card` + A2A), and desktop/VPS sync by QR, key, or Hermes.
 * **Dropped for now:** iOS.
 
 ## What is built (map of the code)
@@ -160,22 +156,13 @@ Also:
 
 ## What to do next, in order
 
-1. Get the APK build green (see "Where the work is").
-2. Finish M3 on a real phone:
-   * the questionnaire leading into the first check-in;
-   * the Health Connect permission flow;
-   * background ticks (check WorkManager logs; `hesBackgroundDispatcher`);
-   * calendar writes going into the Google calendar;
-   * a food photo through ChatGPT.
-3. M4 Canvas. The current canvas code is in `lib/assimilis/canvas/`.
-   * It should open as the infinite canvas, with books as objects.
-   * Add media, video, sound and coded-graph objects, plus connectors.
-   * Add a `canvas_read` tool so the AI can read the canvas.
-4. M5 Team. Add a team task with roles (manager, checker, and others).
-   * Use `AgentLoop` with `AgentModels.endpointFor(...)` per role.
-   * Hand jobs to the Workstation and the Phone Agent through their tools.
-   * Use A2A for other devices.
-5. M6: the WhatsApp pairing-code agent number, the multi-user encrypted VLE scan tool, and QR connect and sync.
+1. **Done (CI green):** APK build succeeds with 6 GB Gradle heap in CI.
+2. **Done (built & unit/screenshot tested):** M4 Canvas, M5 Team, M6 WhatsApp / multi-user encrypted VLE / QR Connect & HES Sync.
+3. **Remaining — real Android phone verification:**
+   * M3 HES: Awakening questionnaire -> first check-in, Health Connect permission flow, WorkManager background ticks (`hesBackgroundDispatcher`), Google calendar writes, food photo via ChatGPT.
+   * M4 Canvas: infinite plane pan/zoom/drag, image/video/audio pickers & playback, connector creation, `canvas_read` via A.
+   * M5 Team: start a team task with Manager + Worker + Checker, test Workstation & Phone Agent handoff and Save to Canvas.
+   * M6: WhatsApp pairing code against Hermes/Baileys bridge, live UWI Mona VLE scan with multiple encrypted accounts, QR scan between two phones / desktop.
 
 ## Rules that still hold
 

@@ -29,9 +29,32 @@ APK builds run in CI (`build-apk.yml`). Unit and screenshot tests pass locally (
   brain check-ins (morning briefing, every few hours, evening review with a chronicle chapter). Quiet hours respected.
 * **Awakening questionnaire** and **food photos** (calories and macros by the HES brain, logged in HES and Health
   Connect).
+* **Canvas (M4):** opens directly as the infinite canvas (0.2–3× pan/zoom, vector ink) with books as draggable,
+  connectable objects alongside rich objects: note cards, coded graphs (`FunctionGraph`), images/media, video
+  (external player or embedded YouTube), sound/audio (`audioplayers`), and code/maths blocks. Bezier connectors link
+  any books or objects with optional labels. Every agent can read and place objects via `canvas_read` and
+  `canvas_add_object`.
+* **Team (M5):** user-started multi-agent team tasks (never runs unless started) with roles (Manager, Worker,
+  Checker, Researcher, Phone Operator) and optional per-role model overrides through the model gateway. Uses
+  `AgentLoop` + `AgentModels.endpointFor(...)`, hands jobs to Workstation (`workstation_task` with built-in tools)
+  and Phone Agent (`phone_task`), coordinates nearby devices via A2A, and runs an automatic Checker verification
+  (with revision pass if needed). Reports can be saved straight to Canvas.
+* **WhatsApp (M6):** enter a spare **agent number** and a **receiver number**; requests an 8-character WhatsApp
+  Linked Devices pairing code (`XXXX-XXXX`) from your Hermes / WhatsApp bridge (or custom bridge URL + encrypted
+  token), checks link status, and lets A and agents message the receiver via `whatsapp_send`.
+* **UWI Mona VLE scanner (M6):** multi-user read-only Moodle scanner (back for everyone). Stores several users'
+  accounts **encrypted in the device keystore** (`flutter_secure_storage`, never in SharedPreferences). Scans courses,
+  upcoming deadlines, announcements and course resources, creates Canvas books, sends deadlines to HES, and exposes
+  `vle_accounts` / `vle_scan` tools to every agent.
+* **QR Connect & HES Sync (M6):** show or scan QR codes / pairing keys (`ASM1:...` or `assimilis://sync?...`) to
+  connect your own devices for key-authenticated two-way HES merge (`/hes/sync`), connect other players to exchange
+  read-only Hunter Cards (`/hes/card`) + A2A without sharing private logs, and sync with desktop or VPS by QR, key
+  or Hermes.
 * Caveats: Health Connect must be installed (Android 14+ has it built in). Background location needs "Allow all
   the time". Screen time needs Usage access. With the Workstation on `chatgpt/` models, tools work; on `hermes/`
-  models, Hermes uses its own tools (text only through the gateway).
+  models, Hermes uses its own tools (text only through the gateway). WhatsApp live pairing requires a running
+  WhatsApp/Baileys bridge on Hermes or a custom bridge URL; desktop/VPS HES sync expects `/api/hes/sync` (JSON
+  backup copy is included as fallback).
 
 ## Agent to agent (A2A, 2026-11-22, not yet tried on real devices)
 

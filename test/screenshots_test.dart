@@ -13,6 +13,9 @@ import 'package:assimilis_mobile/assimilis/hes/hes_questionnaire_view.dart';
 import 'package:assimilis_mobile/assimilis/links/links_view.dart';
 import 'package:assimilis_mobile/assimilis/reach/reach_view.dart';
 import 'package:assimilis_mobile/assimilis/reminders_view.dart';
+import 'package:assimilis_mobile/assimilis/sync/qr_connect_view.dart';
+import 'package:assimilis_mobile/assimilis/uwi/vle_view.dart';
+import 'package:assimilis_mobile/assimilis/whatsapp/whatsapp_view.dart';
 import 'package:assimilis_mobile/hub/permissions_view.dart';
 import 'package:assimilis_mobile/hub/welcome_view.dart';
 import 'package:assimilis_mobile/assimilis/voice/voice_mode_view.dart';
@@ -40,7 +43,10 @@ Future<void> _fonts() async {
   await load('JetBrainsMono', ['assets/fonts/JetBrainsMono-400.ttf', 'assets/fonts/JetBrainsMono-600.ttf', 'assets/fonts/JetBrainsMono-700.ttf']);
   await load('Inter', ['assets/fonts/Inter-400.ttf', 'assets/fonts/Inter-600.ttf', 'assets/fonts/Inter-700.ttf']);
   await load('Roboto', ['assets/fonts/Inter-400.ttf']);
-  final root = Platform.environment['FLUTTER_ROOT'] ?? 'C:/Users/shaki/flutter';
+  final envRoot = Platform.environment['FLUTTER_ROOT'];
+  final root = envRoot != null && envRoot.isNotEmpty
+      ? envRoot
+      : (Directory('/opt/flutter').existsSync() ? '/opt/flutter' : 'C:/Users/shaki/flutter');
   await load('MaterialIcons', ['$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf']);
 }
 
@@ -167,6 +173,9 @@ void main() {
   testWidgets('safety', (t) => _shot(t, const PermissionsView(), '09_safety'));
   testWidgets('welcome', (t) => _shot(t, const WelcomeView(), '00_welcome'));
   testWidgets('links', (t) => _shot(t, const LinksView(), '07_models_links'));
+  testWidgets('vle', (t) => _shot(t, const VleView(), '19_vle'));
+  testWidgets('qr connect', (t) => _shot(t, const QrConnectView(), '20_qr_connect'));
+  testWidgets('whatsapp', (t) => _shot(t, const WhatsAppView(), '21_whatsapp'));
 
   testWidgets('app icon', (t) async {
     final b = TestWidgetsFlutterBinding.instance;
