@@ -17,6 +17,7 @@ import 'package:assimilis_mobile/assimilis/voice/voice_mode_view.dart';
 import 'package:assimilis_mobile/hub/brand.dart';
 import 'package:assimilis_mobile/hub/core_orb.dart';
 import 'package:assimilis_mobile/hub/hub_view.dart';
+import 'package:assimilis_mobile/hub/shell_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -124,6 +125,10 @@ void main() {
   });
 
   testWidgets('hub', (t) => _shot(t, const HubView(), '01_hub'));
+  testWidgets('shell hes', (t) => _shot(t, const AppShell(), '10_shell_hes'));
+  testWidgets('shell agents', (t) => _shot(t, const AppShell(initial: 2), '11_shell_agents'));
+  testWidgets('shell team', (t) => _shot(t, const AppShell(initial: 3), '12_shell_team'));
+  testWidgets('shell settings', (t) => _shot(t, const AppShell(initial: 4), '13_shell_settings'));
   testWidgets('hes', (t) => _shot(t, const HesView(), '02_hes_status'));
   testWidgets('voice', (t) => _shot(t, const VoiceModeView(introduce: false), '03_voice_A'));
   testWidgets('canvas', (t) => _shot(t, const CanvasView(), '04_canvas'));

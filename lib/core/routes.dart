@@ -7,7 +7,7 @@ import '../controllers/settings_controller.dart';
 import '../views/home_view.dart';
 import '../views/chat_view.dart';
 import '../views/task_view.dart';
-import '../hub/hub_view.dart';
+import '../hub/shell_view.dart';
 
 abstract class AppRoutes {
   static const hub = '/';
@@ -18,7 +18,7 @@ abstract class AppRoutes {
 
 class AppPages {
   static final pages = [
-    GetPage(name: AppRoutes.hub, page: () => const HubView()),
+    GetPage(name: AppRoutes.hub, page: () => const AppShell()),
     GetPage(
       name: AppRoutes.home,
       page: () => const HomeView(),
