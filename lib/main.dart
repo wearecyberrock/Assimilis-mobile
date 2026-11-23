@@ -32,6 +32,7 @@ import 'hub/hub_view.dart';
 import 'assimilis/models/shared_library.dart';
 import 'assimilis/a2a/a2a.dart';
 import 'assimilis/brain.dart';
+import 'assimilis/links/model_gateway.dart';
 import 'phone_agent/private_agent_main.dart' as phone_agent;
 import 'workstation/pocketstrike_main.dart' show sharedPreferencesProvider;
 
@@ -158,6 +159,8 @@ void main() {
     // Agent-to-agent with other Assimilis devices (A2A over Wi-Fi / Tailscale).
     AssimilisBrain.instance; // registers A as the answerer for other devices
     unawaited(A2a.instance.start());
+    // One local endpoint so any model or key in Settings can be shared with any agent.
+    unawaited(ModelGateway.instance.start());
 
     runApp(ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],

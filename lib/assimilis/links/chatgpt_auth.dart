@@ -1,14 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
-/// "Sign in with ChatGPT": the same OAuth flow the Codex CLI (and Hermes) use, so your ChatGPT
+/// A sign-in code from OpenAI: open [url] and type [userCode] there.
+class ChatGptDeviceCode {
+  final String userCode, deviceAuthId, url;
+  final int interval;
+  const ChatGptDeviceCode({required this.userCode, required this.deviceAuthId, required this.url, required this.interval});
+}
+
+/// "Sign in with ChatGPT": the same device-code flow the Codex CLI (and Hermes) use, so your ChatGPT
 /// subscription can answer in Assimilis. The owner chose this knowing it is outside OpenAI's
 /// intended use for third-party apps; tokens stay in the Android keystore.
 class ChatGptAuth {
@@ -17,8 +22,6 @@ class ChatGptAuth {
 
   static const clientId = 'app_EMoamEEZ73f0CkXaXp7hrann'; // public Codex CLI client id
   static const _issuer = 'https://auth.openai.com';
-  static const _port = 1455;
-  static const _redirect = 'http://localhost:$_port/auth/callback';
   static const responsesUrl = 'https://chatgpt.com/backend-api/codex/responses';
   static const models = ['gpt-6-sol', 'gpt-6-astra', 'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6.1-terra', 'gpt-5.6-sol'];
 
@@ -65,65 +68,87 @@ class ChatGptAuth {
     }
   }
 
-  /// Opens ChatGPT's sign-in page and waits for the redirect back to this phone.
-  Future<String> signIn() async {
-    final rnd = Random.secure();
-    final verifier = _b64url(List.generate(64, (_) => rnd.nextInt(256)));
-    final challenge = _b64url(sha256.convert(ascii.encode(verifier)).bytes);
-    final state = _b64url(List.generate(24, (_) => rnd.nextInt(256)));
-
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, _port, shared: true);
-    final code = Completer<String>();
-    final sub = server.listen((req) async {
-      if (req.uri.path != '/auth/callback') {
-        req.response.statusCode = 404;
-        await req.response.close();
-        return;
-      }
-      final q = req.uri.queryParameters;
-      final ok = q['state'] == state && q['code'] != null;
-      req.response.headers.contentType = ContentType.html;
-      req.response.write('<html><body style="background:#121216;color:#EDEDF2;font-family:sans-serif;text-align:center;padding-top:30vh">'
-          '<h2 style="color:#A855F7">${ok ? 'Signed in to ChatGPT' : 'Sign-in failed'}</h2>'
-          '<p>You can go back to Assimilis.</p></body></html>');
-      await req.response.close();
-      if (!code.isCompleted) ok ? code.complete(q['code']) : code.completeError(q['error_description'] ?? 'Sign-in was cancelled.');
-    });
-
-    final url = Uri.parse('$_issuer/oauth/authorize').replace(queryParameters: {
-      'response_type': 'code',
-      'client_id': clientId,
-      'redirect_uri': _redirect,
-      'scope': 'openid profile email offline_access',
-      'code_challenge': challenge,
-      'code_challenge_method': 'S256',
-      'id_token_add_organizations': 'true',
-      'codex_cli_simplified_flow': 'true',
-      'state': state,
-      'originator': 'codex_cli_rs',
-    });
-    try {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-      final c = await code.future.timeout(const Duration(minutes: 5));
-      final res = await http.post(Uri.parse('$_issuer/oauth/token'), headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }, body: {
-        'grant_type': 'authorization_code',
-        'code': c,
-        'redirect_uri': _redirect,
-        'client_id': clientId,
-        'code_verifier': verifier,
-      });
-      if (res.statusCode >= 400) throw Exception('Token exchange failed (${res.statusCode}).');
-      final t = Map<String, dynamic>.from(jsonDecode(res.body));
-      t['expires_at'] = DateTime.now().millisecondsSinceEpoch ~/ 1000 + ((t['expires_in'] ?? 3600) as num).toInt();
-      await _save(t);
-      return 'Signed in to ChatGPT${(await email) == null ? '' : ' as ${await email}'}.';
-    } finally {
-      await sub.cancel();
-      await server.close(force: true);
+  /// Step 1 of "Sign in with ChatGPT" (the device-code flow the Codex CLI and Hermes use): asks OpenAI for a code.
+  /// Show the user [ChatGptDeviceCode.url] (the long link) and [ChatGptDeviceCode.userCode] (the key they type in).
+  Future<ChatGptDeviceCode> startDeviceSignIn() async {
+    final res = await http
+        .post(Uri.parse('$_issuer/api/accounts/deviceauth/usercode'),
+            headers: const {'Content-Type': 'application/json'}, body: jsonEncode({'client_id': clientId}))
+        .timeout(const Duration(seconds: 20));
+    if (res.statusCode == 401 || res.statusCode == 403) {
+      throw Exception('OpenAI refused the sign-in request (${res.statusCode}). Turn on "device code sign-in" for Codex in '
+          'your ChatGPT security settings, then try again.');
     }
+    if (res.statusCode != 200) throw Exception('OpenAI did not give a sign-in code (${res.statusCode}).');
+    final d = Map<String, dynamic>.from(jsonDecode(res.body));
+    final userCode = '${d['user_code'] ?? d['usercode'] ?? ''}';
+    final id = '${d['device_auth_id'] ?? ''}';
+    if (userCode.isEmpty || id.isEmpty) throw Exception('OpenAI\'s sign-in reply was missing the code.');
+    final interval = max(3, int.tryParse('${d['interval'] ?? 5}') ?? 5);
+    return ChatGptDeviceCode(userCode: userCode, deviceAuthId: id, interval: interval, url: '$_issuer/codex/device');
   }
+
+  /// Step 2: waits (up to 15 minutes) until the user has typed the code on the link, then saves the tokens.
+  /// [cancelled] is checked between polls so the dialog can stop waiting.
+  Future<String> finishDeviceSignIn(ChatGptDeviceCode code, {bool Function()? cancelled}) async {
+    final deadline = DateTime.now().add(const Duration(minutes: 15));
+    Map<String, dynamic>? auth;
+    var blips = 0;
+    while (DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(Duration(seconds: code.interval));
+      if (cancelled?.call() == true) throw Exception('Sign-in cancelled.');
+      http.Response poll;
+      try {
+        poll = await http
+            .post(Uri.parse('$_issuer/api/accounts/deviceauth/token'),
+                headers: const {'Content-Type': 'application/json'},
+                body: jsonEncode({'device_auth_id': code.deviceAuthId, 'user_code': code.userCode}))
+            .timeout(const Duration(seconds: 20));
+      } catch (e) {
+        if (++blips >= 6) throw Exception('Lost the connection while waiting for ChatGPT: $e');
+        continue;
+      }
+      blips = 0;
+      if (poll.statusCode == 200) {
+        auth = Map<String, dynamic>.from(jsonDecode(poll.body));
+        break;
+      }
+      if (poll.statusCode == 403 || poll.statusCode == 404) continue; // not approved yet
+      throw Exception('ChatGPT sign-in stopped (${poll.statusCode}).');
+    }
+    if (auth == null) throw Exception('The code expired. Start the sign-in again.');
+    final authorizationCode = '${auth['authorization_code'] ?? ''}';
+    final verifier = '${auth['code_verifier'] ?? ''}';
+    if (authorizationCode.isEmpty || verifier.isEmpty) throw Exception('ChatGPT approved but sent no sign-in code.');
+    http.Response? res;
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      try {
+        res = await http.post(Uri.parse('$_issuer/oauth/token'), headers: const {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }, body: {
+          'grant_type': 'authorization_code',
+          'code': authorizationCode,
+          'redirect_uri': '$_issuer/deviceauth/callback',
+          'client_id': clientId,
+          'code_verifier': verifier,
+        }).timeout(const Duration(seconds: 20));
+        break;
+      } catch (_) {
+        if (attempt == 3) rethrow;
+        await Future<void>.delayed(Duration(seconds: attempt));
+      }
+    }
+    if (res == null || res.statusCode != 200) throw Exception('Token exchange failed (${res?.statusCode}).');
+    final t = Map<String, dynamic>.from(jsonDecode(res.body));
+    if (t['access_token'] == null) throw Exception('ChatGPT sent no access token.');
+    t['expires_at'] = DateTime.now().millisecondsSinceEpoch ~/ 1000 + ((t['expires_in'] ?? 3600) as num).toInt();
+    await _save(t);
+    final who = await email;
+    return 'Signed in to ChatGPT${who == null ? '' : ' as $who'}.';
+  }
+
+  /// Opens the link in the browser for a [code] (the user then types the code there).
+  Future<void> openLink(ChatGptDeviceCode code) => launchUrl(Uri.parse(code.url), mode: LaunchMode.externalApplication);
 
   Future<String> _accessToken() async {
     final t = await _load();
@@ -150,6 +175,8 @@ class ChatGptAuth {
   Future<String> chat(List<Map<String, String>> messages, {String system = '', String model = 'gpt-6-sol', void Function(String)? onDelta}) async {
     final token = await _accessToken();
     final t = await _load();
+    final sys = [system, for (final m in messages) if (m['role'] == 'system') m['content'] ?? ''].where((x) => x.isNotEmpty).join('\n\n');
+    messages = [for (final m in messages) if (m['role'] != 'system') m];
     final auth = _claims(t?['id_token'])['https://api.openai.com/auth'] as Map? ?? const {};
     final accountId = auth['chatgpt_account_id'] as String?;
     final req = http.Request('POST', Uri.parse(responsesUrl))
@@ -164,7 +191,7 @@ class ChatGptAuth {
       })
       ..body = jsonEncode({
         'model': model,
-        'instructions': system,
+        'instructions': sys,
         'input': [
           for (final m in messages)
             {
