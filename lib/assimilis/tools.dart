@@ -7,6 +7,7 @@ import 'a2a/a2a.dart';
 import 'canvas/maths.dart';
 import 'canvas/notes_store.dart';
 import 'hes/hes_store.dart';
+import 'hes/hes_system.dart';
 import 'reach/agent_reach.dart';
 import 'reminders.dart';
 
@@ -26,7 +27,8 @@ class AssimilisTools {
   static final schemas = [
     _fn('set_alarm', 'Set a real alarm in the phone\'s Clock app.', {'hour': _n, 'minute': _n, 'label': _s}, ['hour', 'minute']),
     _fn('set_timer', 'Start a countdown timer in the Clock app.', {'seconds': _n, 'label': _s}, ['seconds']),
-    _fn('set_reminder', 'Schedule a reminder notification. when = ISO 8601 local time. repeat: none|daily|weekly|weekdays.',
+    _fn('set_reminder',
+        'Schedule a reminder (through HES: wake-up, study and training become quests; others stay reminders that pay a little when done). when = ISO 8601 local time. repeat: none|daily|weekly|weekdays.',
         {'title': _s, 'when': _s, 'repeat': _s}, ['title', 'when']),
     _fn('list_reminders', 'List upcoming reminders with their ids.', {}),
     _fn('cancel_reminder', 'Cancel a reminder by id.', {'id': _n}, ['id']),
@@ -39,9 +41,6 @@ class AssimilisTools {
     _fn('calculate', 'Evaluate a maths expression exactly (supports sqrt, sin, cos, tan, ln, log, ^, pi, e).', {'expression': _s}, ['expression']),
     _fn('derivative', 'Symbolic derivative with respect to x.', {'expression': _s}, ['expression']),
     _fn('integral', 'Numeric definite integral of f(x) from a to b.', {'expression': _s, 'a': _n, 'b': _n}, ['expression', 'a', 'b']),
-    _fn('hes_log', 'Log a HES activity in plain words, e.g. "30 pushups", "studied 45 min", "slept 7 h".', {'text': _s}, ['text']),
-    _fn('hes_status', 'HES level, rank, class, power, XP, coins and open quests.', {}),
-    _fn('hes_quests', 'Today\'s HES quests with progress.', {}),
     _fn('web_search', 'Search the web (Agent Reach / Exa).', {'query': _s}, ['query']),
     _fn('read_url', 'Read a web page, GitHub repo, YouTube video (captions) or Reddit thread as text.', {'url': _s}, ['url']),
     _fn('github', 'GitHub repo info + README ("owner/repo") or a repo search.', {'query': _s}, ['query']),
@@ -52,6 +51,8 @@ class AssimilisTools {
         {'device': _s, 'message': _s, 'skill': _s}, ['device', 'message']),
     _fn('phone_task', 'Operate the phone screen to do a multi-step job in other apps (open apps, tap, type, scroll). '
         'Risky steps ask the owner on screen unless Full allow is on.', {'task': _s}, ['task']),
+    // HES: every agent can drive the System.
+    ...HesSystem.schemas,
   ];
 
   static String statusFor(String name) => switch (name) {
@@ -61,7 +62,7 @@ class AssimilisTools {
         'create_note' || 'append_note' => 'Writing to Canvas…',
         'search_notes' || 'read_note' => 'Checking your notes…',
         'calculate' || 'derivative' || 'integral' => 'Calculating…',
-        'hes_log' || 'hes_status' || 'hes_quests' => 'Updating HES…',
+        _ when name.startsWith('hes_') => 'Updating HES…',
         'web_search' => 'Searching the web…',
         'read_url' || 'github' || 'reddit' || 'rss' => 'Reading…',
         'phone_task' => 'Working on your phone…',
@@ -75,6 +76,7 @@ class AssimilisTools {
     try {
       final r = Reminders.instance;
       final notes = NotesStore.instance;
+      if (HesSystem.handles(name)) return await HesSystem.runTool(name, a, by: 'A');
       switch (name) {
         case 'set_alarm':
           return await r.alarm(_num(a['hour']).toInt(), _num(a['minute']).toInt(), label: a['label']);
@@ -83,7 +85,7 @@ class AssimilisTools {
         case 'set_reminder':
           final when = DateTime.tryParse('${a['when']}');
           if (when == null) return 'Could not read the time "${a['when']}". Use ISO 8601.';
-          return await r.add('${a['title']}', when, repeat: '${a['repeat'] ?? 'none'}', source: 'jarvis');
+          return await HesSystem.instance.remind('${a['title']}', when, repeat: '${a['repeat'] ?? 'none'}', source: 'A');
         case 'list_reminders':
           final list = await r.list();
           return list.isEmpty
@@ -127,14 +129,6 @@ class AssimilisTools {
           return 'd/dx ${a['expression']} = ${Maths.derive('${a['expression']}')}';
         case 'integral':
           return Maths.integrate('${a['expression']}', _num(a['a']).toDouble(), _num(a['b']).toDouble());
-        case 'hes_log':
-          return await HesStore.instance.quickLog('${a['text']}', source: 'jarvis') ??
-              'No HES tracker matched "${a['text']}".';
-        case 'hes_status':
-          return await HesStore.instance.status();
-        case 'hes_quests':
-          final q = await HesStore.instance.quests();
-          return q.map((x) => '${x['claimed'] == true ? '✔' : '•'} ${x['title']} (${x['done']}/${x['target']})').join('\n');
         case 'web_search':
           return await AgentReach.search('${a['query']}');
         case 'read_url':

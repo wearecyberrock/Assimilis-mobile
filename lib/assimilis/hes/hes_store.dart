@@ -226,8 +226,21 @@ class HesStore {
       .replaceAll('{target}', _num(target))
       .replaceAll('{time}', '${settings['wake_time'] ?? '06:30'}')
       .replaceAll(RegExp(r'{[a-z_]+}'), '')
-      .replaceAll(RegExp(r's+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
+
+  /// Raw access for the HES System (quests it issues, profile, feed, story, achievements), kept in the same file.
+  dynamic get(String key) => _doc[key];
+  Future<void> put(String key, Object? value) async {
+    _doc[key] = value;
+    await _save();
+  }
+
+  /// Adds an event (log, mission, penalty) and returns it.
+  Future<Map<String, dynamic>> addEvent(Map<String, dynamic> e) => _add(e);
+
+  /// The whole HES document (for sync and backups).
+  Map<String, dynamic> export() => jsonDecode(jsonEncode(_doc)) as Map<String, dynamic>;
 
   Future<void> setSetting(String key, Object value) async {
     _doc['settings'] = {...settings, key: value};

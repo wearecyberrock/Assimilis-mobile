@@ -10,9 +10,11 @@ import '../../workstation/core/db/app_database.dart';
 import '../../workstation/core/models/chat_models.dart';
 import '../../workstation/features/providers/application/providers_controller.dart';
 import '../../workstation/features/providers/domain/provider_types.dart';
+import '../agent_loop.dart';
 import '../settings.dart';
 import 'chatgpt_auth.dart';
 import 'hermes_link.dart';
+import 'shared_providers.dart';
 import 'model_gateway.dart';
 
 /// What one agent is using right now, for the status list in Settings.
@@ -28,6 +30,7 @@ class AgentStatus {
 class AgentModels {
   static const agents = [
     ('a', 'A (Assimilis)'),
+    ('hes', 'HES System'),
     ('chat', 'Chat & Models'),
     ('workstation', 'Workstation'),
     ('phone', 'Phone Agent'),
@@ -58,6 +61,8 @@ class AgentModels {
     final name = agents.firstWhere((x) => x.$1 == agent).$2;
 
     switch (agent) {
+      case 'hes':
+        break; // the System reads its assignment through endpointFor('hes')
       case 'a':
         if (model == own) {
           await s.setBlob('brain', 'auto');
@@ -147,6 +152,43 @@ class AgentModels {
     return model == own ? '$name is back on its own model and keys.' : '$name now uses $model.';
   }
 
+  /// The endpoint an in-app brain (A's helpers, the HES System, team roles) should call for [agent].
+  /// An agent on "own" follows A's brain; "auto" picks the first source that is ready. Null when nothing is.
+  static Future<Endpoint?> endpointFor(String agent) async {
+    final s = await AssimilisSettings.get();
+    final gw = ModelGateway.baseUrl;
+    await ModelGateway.instance.start();
+    final token = await ModelGateway.instance.token();
+    final assigned = (await assignments())[agent] ?? own;
+    if (assigned != own) return (base: gw, model: assigned, key: token);
+    final inf = Get.isRegistered<InferenceService>() ? Get.find<InferenceService>() : null;
+    final local = inf != null && inf.isModelLoaded.value ? 'local/${inf.loadedModelName.value}' : null;
+    final chatgpt = 'chatgpt/${s.blob('chatgpt_model') ?? ChatGptAuth.models.first}';
+    final hm = await HermesLink.instance.model;
+    final hermes = 'hermes/${hm.isEmpty ? 'default' : hm}';
+    final key = await s.apiKey();
+    switch (s.blob('brain') ?? 'auto') {
+      case 'chatgpt':
+        return (base: gw, model: chatgpt, key: token);
+      case 'hermes':
+        return (base: gw, model: hermes, key: token);
+      case 'local':
+        return local == null ? null : (base: gw, model: local, key: token);
+      case 'api':
+        return key.isEmpty ? null : (base: s.baseUrl, model: s.model, key: key);
+    }
+    if (await ChatGptAuth.instance.signedIn) return (base: gw, model: chatgpt, key: token);
+    if (key.isNotEmpty) return (base: s.baseUrl, model: s.model, key: key);
+    final shared = await SharedProviders.load();
+    for (final p in SharedProviders.all) {
+      final k = shared[p.id];
+      if ((k?['key'] ?? '').isNotEmpty) return (base: gw, model: '${p.id}/${(k?['model'] ?? '').isNotEmpty ? k!['model'] : p.defaultModel}', key: token);
+    }
+    if (await HermesLink.instance.configured) return (base: gw, model: hermes, key: token);
+    if (local != null) return (base: gw, model: local, key: token);
+    return null;
+  }
+
   /// What each agent is using, and whether it can answer.
   static Future<List<AgentStatus>> status(ProviderContainer? container) async {
     final a = await assignments();
@@ -173,6 +215,14 @@ class AgentModels {
       _ => true,
     };
     out.add(AgentStatus('a', 'A (Assimilis)', aUsing, aReady, tag('a')));
+
+    // HES System
+    Endpoint? hesEp;
+    try {
+      hesEp = await endpointFor('hes');
+    } catch (_) {}
+    out.add(AgentStatus('hes', 'HES System', hesEp == null ? 'No brain yet' : ((a['hes'] ?? own) == own ? 'Same as A · ${hesEp.model}' : hesEp.model),
+        hesEp != null, tag('hes')));
 
     // Chat & Models
     if (Get.isRegistered<SettingsController>()) {
