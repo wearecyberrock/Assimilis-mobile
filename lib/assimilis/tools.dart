@@ -40,6 +40,23 @@ class AssimilisTools {
     _fn('search_notes', 'Search Canvas notes; returns titles, ids and snippets.', {'query': _s}, ['query']),
     _fn('read_note', 'Read a Canvas page by id.', {'id': _s}, ['id']),
     _fn('append_note', 'Append markdown to an existing Canvas page by id.', {'id': _s, 'content': _s}, ['id', 'content']),
+    _fn('canvas_read',
+        'Read the infinite Canvas: all books, rich objects (notes, coded graphs, media, video, sound, code) and connection lines, or zoom into one book or page.',
+        {'book': _s, 'page_id': _s, 'query': _s}),
+    _fn('canvas_add_object',
+        'Place an object on the infinite Canvas (or a page canvas) and optionally connect it to another book or object. kind: note|graph|media|video|sound|code.',
+        {
+          'kind': _s,
+          'title': _s,
+          'content': _s,
+          'functions': _s,
+          'uri': _s,
+          'language': _s,
+          'connect_to': _s,
+          'connect_label': _s,
+          'page_id': _s,
+        },
+        ['kind']),
     _fn('calculate', 'Evaluate a maths expression exactly (supports sqrt, sin, cos, tan, ln, log, ^, pi, e).', {'expression': _s}, ['expression']),
     _fn('derivative', 'Symbolic derivative with respect to x.', {'expression': _s}, ['expression']),
     _fn('integral', 'Numeric definite integral of f(x) from a to b.', {'expression': _s, 'a': _n, 'b': _n}, ['expression', 'a', 'b']),
@@ -64,8 +81,8 @@ class AssimilisTools {
         'set_alarm' => 'Setting an alarm…',
         'set_timer' => 'Starting a timer…',
         'set_reminder' => 'Setting a reminder…',
-        'create_note' || 'append_note' => 'Writing to Canvas…',
-        'search_notes' || 'read_note' => 'Checking your notes…',
+        'create_note' || 'append_note' || 'canvas_add_object' => 'Writing to Canvas…',
+        'search_notes' || 'read_note' || 'canvas_read' => 'Reading Canvas…',
         'calculate' || 'derivative' || 'integral' => 'Calculating…',
         _ when name.startsWith('hes_') => 'Updating HES…',
         'web_search' => 'Searching the web…',
@@ -121,8 +138,7 @@ class AssimilisTools {
           await notes.load();
           final f = notes.find('${a['id']}');
           if (f == null) return 'No page with id ${a['id']}.';
-          return '# ${f.page['title']}\n${f.page['text']}\n'
-              '${(f.page['nodes'] as List).map((n) => '- card: ${n['text']}').join('\n')}';
+          return notes.readCanvas(pageId: '${a['id']}');
         case 'append_note':
           await notes.load();
           final f = notes.find('${a['id']}');
@@ -130,6 +146,53 @@ class AssimilisTools {
           f.page['text'] = '${f.page['text']}\n\n${a['content']}';
           await notes.touch(f.page);
           return 'Added to "${f.page['title']}".';
+        case 'canvas_read':
+          await notes.load();
+          return notes.readCanvas(
+            bookQuery: a['book']?.toString(),
+            pageId: a['page_id']?.toString(),
+            query: a['query']?.toString(),
+          );
+        case 'canvas_add_object':
+          await notes.load();
+          final kind = '${a['kind'] ?? 'note'}'.toLowerCase().trim();
+          Map? targetPage;
+          if (a['page_id'] != null && '${a['page_id']}'.trim().isNotEmpty) {
+            targetPage = notes.find('${a['page_id']}')?.page;
+            if (targetPage == null) return 'No Canvas page with id "${a['page_id']}".';
+          }
+          final extra = <String, dynamic>{};
+          if (kind == 'graph') {
+            final fns = '${a['functions'] ?? a['content'] ?? 'sin(x)'}'
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+            extra['functions'] = fns;
+            if (a['content'] != null) extra['code'] = '${a['content']}';
+          } else if (kind == 'code') {
+            extra['language'] = '${a['language'] ?? 'code'}';
+            extra['code'] = '${a['content'] ?? ''}';
+          } else if (kind == 'media' || kind == 'video' || kind == 'sound') {
+            extra['uri'] = '${a['uri'] ?? ''}'.trim();
+          }
+          final obj = await notes.addBoardObject(
+            kind: kind,
+            title: '${a['title'] ?? ''}'.trim(),
+            text: '${a['content'] ?? ''}',
+            extra: extra,
+            page: targetPage,
+          );
+          String linkMsg = '';
+          final connectTo = '${a['connect_to'] ?? ''}'.trim();
+          if (connectTo.isNotEmpty && targetPage == null) {
+            final other = notes.findBoardItem(connectTo);
+            if (other != null) {
+              await notes.addBoardConnector('${other['id']}', '${obj['id']}', label: a['connect_label']?.toString());
+              linkMsg = ' and connected to ${other['name'] ?? other['title'] ?? other['id']}';
+            }
+          }
+          return 'Placed $kind object "${obj['title']}" (${obj['id']}) on Canvas$linkMsg.';
         case 'calculate':
           return '${a['expression']} = ${Maths.calc('${a['expression']}')}';
         case 'derivative':
