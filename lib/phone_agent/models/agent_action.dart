@@ -28,6 +28,7 @@ class AgentAction {
     'read_notifications',
     'read_screen',
     'run_adb_command',
+    'assimilis_tool',
     'general_query',
   ];
 }

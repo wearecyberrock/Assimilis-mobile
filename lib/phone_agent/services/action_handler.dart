@@ -1,3 +1,4 @@
+import '../../assimilis/tools.dart';
 import '../models/agent_action.dart';
 import '../models/chat_message.dart';
 import 'app_launcher_service.dart';
@@ -35,6 +36,11 @@ class ActionHandler {
       String result;
 
       switch (action.action) {
+        case 'assimilis_tool':
+          result = await AssimilisTools.run(
+            '${action.params['tool'] ?? ''}',
+            Map<String, dynamic>.from(action.params['args'] as Map? ?? const {}),
+          );
         case 'open_app':
           result = await _appLauncher.openApp(
             action.params['app_name'] as String? ?? '',
