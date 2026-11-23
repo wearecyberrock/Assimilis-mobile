@@ -12,8 +12,11 @@ import '../assimilis/links/links_view.dart';
 import '../assimilis/reach/reach_view.dart';
 import '../assimilis/reminders_view.dart';
 import '../assimilis/settings.dart';
+import '../assimilis/sync/qr_connect_view.dart';
 import '../assimilis/team/team_view.dart';
+import '../assimilis/uwi/vle_view.dart';
 import '../assimilis/voice/voice_mode_view.dart';
+import '../assimilis/whatsapp/whatsapp_view.dart';
 import '../core/routes.dart';
 import '../phone_agent/private_agent_main.dart' show PrivateAgentApp;
 import '../views/cluster_view.dart';
@@ -166,25 +169,30 @@ class AgentsView extends StatelessWidget {
       ]);
 }
 
-/// Team: the agents working together on demand (manager, worker, checker and other roles), plus A2A and RAM pool.
+/// Team: the agents working together on demand (manager, worker, checker and other roles), plus A2A, QR sync and RAM pool.
 class TeamView extends StatelessWidget {
   const TeamView({super.key});
   @override
   Widget build(BuildContext context) => _page('Team', 'Start a team task with roles, or coordinate nearby devices.', [
         const TeamTaskSection(),
         const HudHeader('Devices & network'),
+        sectionRow(Icons.qr_code_2_rounded, 'QR Connect & Sync', 'Connect HES devices, other players, and sync with desktop / VPS',
+            () => openPage(const QrConnectView())),
         sectionRow(Icons.hub_rounded, "Nearby A's", 'Talk to A on your other devices and pass jobs around', () => openPage(const DevicesView())),
         sectionRow(Icons.memory_rounded, 'Devices & RAM', 'Pool phones and laptops to run bigger models', () => openPage(const ClusterView())),
       ]);
 }
 
-/// Settings: every agent's models and keys in one place, plus the phone's permissions and the shared tools.
+/// Settings: every agent's models and keys in one place, plus the phone's permissions, channels and shared tools.
 class SettingsHubView extends StatelessWidget {
   const SettingsHubView({super.key});
   @override
-  Widget build(BuildContext context) => _page('Settings', 'Models, keys, permissions and the tools every agent shares.', [
+  Widget build(BuildContext context) => _page('Settings', 'Models, keys, permissions, channels and the tools every agent shares.', [
         sectionRow(Icons.psychology_alt_rounded, 'Models & keys', "Every agent's models and API keys; share them between agents", () => openPage(const LinksView())),
         sectionRow(Icons.verified_user_outlined, 'Safety & Permissions', 'Ask me / Full allow, and Android permissions', () => openPage(const PermissionsView())),
+        sectionRow(Icons.chat_rounded, 'WhatsApp', 'Link a spare agent number with a pairing code and set a receiver number', () => openPage(const WhatsAppView())),
+        sectionRow(Icons.school_rounded, 'UWI Mona VLE', 'Multi-user encrypted VLE scanner (courses, deadlines, resources, news)', () => openPage(const VleView())),
+        sectionRow(Icons.qr_code_2_rounded, 'QR Connect & Sync', 'Pair HES across your devices, other players, desktop or VPS', () => openPage(const QrConnectView())),
         sectionRow(Icons.travel_explore_rounded, 'Agent Reach', 'Web search and readers every agent can use', () => openPage(const ReachView())),
         sectionRow(Icons.alarm_rounded, 'Alarms & Reminders', 'Alarms, timers and reminders', () => openPage(const RemindersView())),
       ]);

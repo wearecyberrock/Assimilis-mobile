@@ -60,6 +60,10 @@ class A2a {
   /// Set by the brain so `ask` can answer without importing it here (avoids a cycle).
   static Future<String> Function(String text, {bool allowOffload})? askHandler;
   static Future<String> Function(String task)? phoneTaskHandler;
+  /// Set by HesSync so A2A also serves public HES Hunter Cards (/hes/card) and key-authenticated
+  /// two-way HES sync (/hes/sync) for your own devices.
+  static Future<Map<String, dynamic>> Function()? hesCardHandler;
+  static Future<Map<String, dynamic>> Function(String syncKey, Map<String, dynamic> incoming)? hesSyncHandler;
 
   Future<String> policy() async => (await AssimilisSettings.get()).blob('a2a_policy') ?? 'ask';
   Future<void> setPolicy(String p) async => (await AssimilisSettings.get()).setBlob('a2a_policy', p);
@@ -159,6 +163,38 @@ class A2a {
           (req.uri.path == '/.well-known/agent-card.json' || req.uri.path == '/.well-known/agent.json')) {
         res.headers.contentType = ContentType.json;
         res.write(jsonEncode(await card(host)));
+        return;
+      }
+      if (req.method == 'GET' && req.uri.path == '/hes/card') {
+        if (hesCardHandler == null) {
+          res.statusCode = 503;
+          res.headers.contentType = ContentType.json;
+          res.write(jsonEncode({'error': 'HES card not ready.'}));
+          return;
+        }
+        res.headers.contentType = ContentType.json;
+        res.write(jsonEncode(await hesCardHandler!()));
+        return;
+      }
+      if (req.method == 'POST' && req.uri.path == '/hes/sync') {
+        if (hesSyncHandler == null) {
+          res.statusCode = 503;
+          res.headers.contentType = ContentType.json;
+          res.write(jsonEncode({'error': 'HES sync not ready.'}));
+          return;
+        }
+        final key = req.headers.value('x-assimilis-sync-key')?.trim() ?? '';
+        final body = await utf8.decoder.bind(req).take(4 << 20).join();
+        final payload = jsonDecode(body) as Map<String, dynamic>;
+        final out = await hesSyncHandler!(key, payload);
+        if (out['unauthorized'] == true) {
+          res.statusCode = 401;
+          res.headers.contentType = ContentType.json;
+          res.write(jsonEncode({'error': 'Invalid sync key.'}));
+          return;
+        }
+        res.headers.contentType = ContentType.json;
+        res.write(jsonEncode(out));
         return;
       }
       if (req.method == 'POST' && req.uri.path == '/a2a') {

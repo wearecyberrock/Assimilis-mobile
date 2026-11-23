@@ -242,6 +242,102 @@ class HesStore {
   /// The whole HES document (for sync and backups).
   Map<String, dynamic> export() => jsonDecode(jsonEncode(_doc)) as Map<String, dynamic>;
 
+  /// Merges an incoming HES document (from another own device, desktop, or VPS) without duplicates.
+  /// Events merge by id (preserving 'undone'), modules union, and system lists merge by id.
+  Future<String> importMerge(Map<String, dynamic> incoming) async {
+    await load();
+    if (!onboarded && incoming['baseline'] is Map) {
+      _doc['baseline'] = Map<String, dynamic>.from(incoming['baseline'] as Map);
+    } else if (_doc['baseline'] is Map && incoming['baseline'] is Map) {
+      final a = (_doc['baseline']['start'] as num?) ?? 0;
+      final b = (incoming['baseline']['start'] as num?) ?? 0;
+      if (b > 0 && (a == 0 || b < a)) {
+        _doc['baseline'] = Map<String, dynamic>.from(incoming['baseline'] as Map);
+      }
+    }
+
+    // Modules union.
+    final mods = {...activeModules, ...List<String>.from(incoming['modules'] ?? const [])}.toList();
+    _doc['modules'] = mods;
+
+    // Events merge by id.
+    final byId = <String, Map<String, dynamic>>{};
+    for (final e in events) {
+      byId['${e['id']}'] = Map<String, dynamic>.from(e);
+    }
+    var addedEvents = 0;
+    for (final raw in (incoming['events'] as List? ?? const [])) {
+      final e = Map<String, dynamic>.from(raw as Map);
+      final id = '${e['id'] ?? ''}';
+      if (id.isEmpty) continue;
+      if (!byId.containsKey(id)) {
+        byId[id] = e;
+        addedEvents++;
+      } else if (e['status'] == 'undone') {
+        byId[id]!['status'] = 'undone';
+      }
+    }
+    final mergedEvents = byId.values.toList()
+      ..sort((a, b) => ((a['at'] ?? 0) as num).compareTo((b['at'] ?? 0) as num));
+    _doc['events'] = mergedEvents;
+
+    // Settings merge (fill missing keys).
+    if (incoming['settings'] is Map) {
+      final s = {...settings};
+      for (final entry in (incoming['settings'] as Map).entries) {
+        s.putIfAbsent('${entry.key}', () => entry.value);
+      }
+      _doc['settings'] = s;
+    }
+
+    // Merge keyed system lists (quests, chronicle, achievements, feed, questions).
+    var addedItems = 0;
+    for (final listKey in const [
+      'system_quests',
+      'system_chronicle',
+      'system_achievements',
+      'system_feed',
+      'system_questions',
+    ]) {
+      final cur = List<Map<String, dynamic>>.from(
+        (_doc[listKey] as List? ?? const []).map((x) => Map<String, dynamic>.from(x as Map)),
+      );
+      final inc = List<Map<String, dynamic>>.from(
+        (incoming[listKey] as List? ?? const []).map((x) => Map<String, dynamic>.from(x as Map)),
+      );
+      if (inc.isEmpty) continue;
+      final map = <String, Map<String, dynamic>>{for (final x in cur) '${x['id'] ?? jsonEncode(x)}': x};
+      for (final x in inc) {
+        final k = '${x['id'] ?? jsonEncode(x)}';
+        if (!map.containsKey(k)) {
+          map[k] = x;
+          addedItems++;
+        } else {
+          final oldTs = '${map[k]!['updated'] ?? map[k]!['at'] ?? ''}';
+          final newTs = '${x['updated'] ?? x['at'] ?? ''}';
+          if (newTs.compareTo(oldTs) > 0) map[k] = x;
+        }
+      }
+      _doc[listKey] = map.values.toList();
+    }
+
+    // Merge remembered facts (string list or map list).
+    if (incoming['system_facts'] is List) {
+      final cur = List<dynamic>.from(_doc['system_facts'] ?? const []);
+      final seen = cur.map(jsonEncode).toSet();
+      for (final f in (incoming['system_facts'] as List)) {
+        if (seen.add(jsonEncode(f))) {
+          cur.add(f);
+          addedItems++;
+        }
+      }
+      _doc['system_facts'] = cur;
+    }
+
+    await _save();
+    return 'Merged +$addedEvents events and +$addedItems System items.';
+  }
+
   Future<void> setSetting(String key, Object value) async {
     _doc['settings'] = {...settings, key: value};
     await _save();

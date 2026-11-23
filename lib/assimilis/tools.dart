@@ -12,6 +12,8 @@ import 'hes/phone_signals.dart';
 import 'hes/hes_food.dart';
 import 'reach/agent_reach.dart';
 import 'reminders.dart';
+import 'uwi/vle_client.dart';
+import 'whatsapp/whatsapp_link.dart';
 
 /// Tools the Assimilis brain (Jarvis) can call. OpenAI function-calling schemas + handlers.
 class AssimilisTools {
@@ -75,6 +77,9 @@ class AssimilisTools {
     // Phone data: calendars, health, location history, screen time, next alarm.
     ...PhoneSignals.schemas,
     ...HesFood.schemas,
+    // Multi-user encrypted UWI Mona VLE scanner and WhatsApp agent messaging.
+    ...VleClient.schemas,
+    ...WhatsAppLink.schemas,
   ];
 
   static String statusFor(String name) => switch (name) {
@@ -85,6 +90,8 @@ class AssimilisTools {
         'search_notes' || 'read_note' || 'canvas_read' => 'Reading Canvas…',
         'calculate' || 'derivative' || 'integral' => 'Calculating…',
         _ when name.startsWith('hes_') => 'Updating HES…',
+        'vle_accounts' || 'vle_scan' => 'Scanning UWI Mona VLE…',
+        'whatsapp_send' => 'Sending WhatsApp message…',
         'web_search' => 'Searching the web…',
         'read_url' || 'github' || 'reddit' || 'rss' => 'Reading…',
         'phone_task' => 'Working on your phone…',
@@ -101,6 +108,8 @@ class AssimilisTools {
       if (HesSystem.handles(name)) return await HesSystem.runTool(name, a, by: 'A');
       if (PhoneSignals.handles(name)) return await PhoneSignals.runTool(name, a);
       if (name == 'hes_food_log' || name == 'hes_food_today') return await HesFood.runTool(name, a);
+      if (VleClient.handles(name)) return await VleClient.runTool(name, a);
+      if (WhatsAppLink.handles(name)) return await WhatsAppLink.runTool(name, a);
       switch (name) {
         case 'set_alarm':
           return await r.alarm(_num(a['hour']).toInt(), _num(a['minute']).toInt(), label: a['label']);

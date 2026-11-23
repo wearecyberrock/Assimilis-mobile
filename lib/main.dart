@@ -37,6 +37,7 @@ import 'assimilis/links/model_gateway.dart';
 import 'assimilis/hes/hes_background.dart';
 import 'assimilis/hes/phone_signals.dart';
 import 'assimilis/hes/hes_food.dart';
+import 'assimilis/sync/hes_sync.dart';
 import 'phone_agent/private_agent_main.dart' as phone_agent;
 import 'workstation/pocketstrike_main.dart' show sharedPreferencesProvider;
 
@@ -160,8 +161,9 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await SharedModelLibrary.init(); // one model folder for every agent
 
-    // Agent-to-agent with other Assimilis devices (A2A over Wi-Fi / Tailscale).
+    // Agent-to-agent with other Assimilis devices (A2A over Wi-Fi / Tailscale) + HES QR sync.
     AssimilisBrain.instance; // registers A as the answerer for other devices
+    HesSync.install();
     unawaited(A2a.instance.start());
     // One local endpoint so any model or key in Settings can be shared with any agent.
     // The gateway also serves A's tools over MCP (HES, phone data, calendar, reminders…) for the other agents.
