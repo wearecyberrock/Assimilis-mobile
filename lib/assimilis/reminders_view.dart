@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'hes/hes_system.dart';
 
 import '../hub/brand.dart';
 import '../hub/hud.dart';
@@ -128,7 +129,8 @@ class _RemindersViewState extends State<RemindersView> {
       time.hour,
       time.minute,
     );
-    final m = await _r.add(title.text.trim(), at, repeat: repeat);
+    // Through HES: wake-up, study and training become quests; others stay reminders that pay when done.
+    final m = await HesSystem.instance.remind(title.text.trim(), at, repeat: repeat);
     setState(() => _msg = m);
     _load();
   }

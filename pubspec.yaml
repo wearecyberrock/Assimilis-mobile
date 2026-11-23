@@ -88,6 +88,10 @@ dependencies:
   flutter_timezone: ^5.1.1
   webview_flutter: ^4.14.1
   nsd: ^5.0.1
+  health: ^14.0.0
+  assimilis_phone_data:
+    path: local_plugins/assimilis_phone_data
+  workmanager: ^0.10.10
 
 dependency_overrides:
   llama_flutter_android:

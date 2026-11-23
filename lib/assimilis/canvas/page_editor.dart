@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../hub/brand.dart';
+import 'canvas_objects.dart';
 import 'note_renderer.dart';
 import 'notes_store.dart';
 
 /// One page: Page mode (write / preview with maths and prompt blocks) or Canvas mode
-/// (infinite plane 0.2x–3x, note cards, connectors, vector ink).
+/// (infinite plane 0.2x–3x with notes, coded graphs, media, video, sound, code, connectors, and vector ink).
 class PageEditor extends StatefulWidget {
   final Map page;
   const PageEditor({super.key, required this.page});
@@ -29,6 +30,7 @@ class _PageEditorState extends State<PageEditor> {
   @override
   void dispose() {
     _commit();
+    _tc.dispose();
     super.dispose();
   }
 
@@ -147,51 +149,41 @@ class _PageEditorState extends State<PageEditor> {
     return _tc.toScene(Offset(size.width / 2, size.height / 2.6));
   }
 
-  void _addCard() {
+  Future<void> _addObject() async {
+    final res = await showCanvasObjectDialog(context);
+    if (res == null || res['_delete'] == true) return;
     final c = _worldCenter();
-    setState(() => nodes.add({
-          'id': NotesStore.newId('node'),
-          'x': c.dx - 90,
-          'y': c.dy - 50,
-          'w': 180.0,
-          'text': 'New note',
-          'color': 0xFF23232B,
-        }));
-    _store.touch(p);
+    await _store.addBoardObject(
+      kind: '${res['kind']}',
+      title: '${res['title']}',
+      text: '${res['text']}',
+      x: (c.dx - 110).clamp(16, 5600),
+      y: (c.dy - 60).clamp(16, 5600),
+      extra: Map<String, dynamic>.from(res['extra'] as Map? ?? const {}),
+      page: p,
+    );
+    if (mounted) setState(() {});
   }
 
-  Future<void> _editCard(Map n) async {
-    final c = TextEditingController(text: '${n['text']}');
-    final r = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AssimilisBrand.navyRaised,
-        content: TextField(controller: c, maxLines: 6, autofocus: true, style: const TextStyle(color: Colors.white)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, '\u0000delete'),
-              child: const Text('Delete', style: TextStyle(color: Colors.redAccent))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Save')),
-        ],
-      ),
-    );
-    if (r == null) return;
-    setState(() {
-      if (r == '\u0000delete') {
-        nodes.remove(n);
-        conns.removeWhere((k) => k['from'] == n['id'] || k['to'] == n['id']);
-      } else {
-        n['text'] = r;
-      }
-    });
-    _store.touch(p);
+  Future<void> _editCard(Map<String, dynamic> n) async {
+    final res = await showCanvasObjectDialog(context, existing: n);
+    if (res == null) return;
+    if (res['_delete'] == true) {
+      await _store.removeBoardObject('${n['id']}', page: p);
+    } else {
+      n['title'] = res['title'];
+      n['text'] = res['text'];
+      n.addAll(Map<String, dynamic>.from(res['extra'] as Map? ?? const {}));
+      await _store.touch(p);
+    }
+    if (mounted) setState(() {});
   }
 
   void _tapCard(Map n) {
     if (_tool != 'connect') return;
     if (_connectFrom == null) {
-      setState(() => _connectFrom = n['id']);
-    } else if (_connectFrom != n['id']) {
+      setState(() => _connectFrom = '${n['id']}');
+    } else if (_connectFrom != '${n['id']}') {
       setState(() {
         conns.add({'id': NotesStore.newId('conn'), 'from': _connectFrom, 'to': n['id']});
         _connectFrom = null;
@@ -201,6 +193,7 @@ class _PageEditorState extends State<PageEditor> {
   }
 
   Widget _canvas() {
+    final itemList = [for (final n in nodes) Map<String, dynamic>.from(n as Map)];
     return Stack(children: [
       Positioned.fill(
         child: InteractiveViewer(
@@ -216,7 +209,6 @@ class _PageEditorState extends State<PageEditor> {
             height: 6000,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              // Child coordinates are already world coordinates (pan/zoom handled by the viewer).
               onPanStart: _tool == 'ink' ? (d) => setState(() => _stroke = [d.localPosition]) : null,
               onPanUpdate: _tool == 'ink' ? (d) => setState(() => _stroke!.add(d.localPosition)) : null,
               onPanEnd: _tool == 'ink'
@@ -229,32 +221,28 @@ class _PageEditorState extends State<PageEditor> {
                     }
                   : null,
               child: Stack(children: [
-                Positioned.fill(child: CustomPaint(painter: _CanvasPainter(nodes, conns, ink, _stroke))),
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: CanvasBoardPainter(items: itemList, conns: conns, ink: ink, liveStroke: _stroke),
+                  ),
+                ),
                 for (final n in nodes)
                   Positioned(
-                    left: (n['x'] as num).toDouble(),
-                    top: (n['y'] as num).toDouble(),
-                    width: (n['w'] as num).toDouble(),
-                    child: GestureDetector(
+                    left: ((n as Map)['x'] as num? ?? 40).toDouble(),
+                    top: (n['y'] as num? ?? 40).toDouble(),
+                    width: (n['w'] as num? ?? 210).toDouble(),
+                    child: CanvasObjectCard(
+                      node: Map<String, dynamic>.from(n),
+                      selected: _connectFrom == n['id'],
                       onTap: () => _tapCard(n),
-                      onDoubleTap: () => _editCard(n),
+                      onDoubleTap: () => _editCard(n as Map<String, dynamic>),
                       onPanUpdate: _tool == 'move'
                           ? (d) => setState(() {
-                                n['x'] = (n['x'] as num) + d.delta.dx;
-                                n['y'] = (n['y'] as num) + d.delta.dy;
+                                n['x'] = (n['x'] as num? ?? 0) + d.delta.dx;
+                                n['y'] = (n['y'] as num? ?? 0) + d.delta.dy;
                               })
                           : null,
                       onPanEnd: _tool == 'move' ? (_) => _store.touch(p) : null,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Color((n['color'] ?? 0xFF23232B) as int),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: _connectFrom == n['id'] ? AssimilisBrand.magenta : AssimilisBrand.violet, width: 1.5),
-                        ),
-                        child: NoteRenderer('${n['text']}'),
-                      ),
                     ),
                   ),
               ]),
@@ -273,7 +261,7 @@ class _PageEditorState extends State<PageEditor> {
             _tb(Icons.pan_tool_rounded, 'move', 'Move'),
             _tb(Icons.edit_rounded, 'ink', 'Ink'),
             _tb(Icons.share_rounded, 'connect', 'Connect'),
-            IconButton(onPressed: _addCard, icon: const Icon(Icons.add_box_rounded, color: Colors.white), tooltip: 'Card'),
+            IconButton(onPressed: _addObject, icon: const Icon(Icons.add_box_rounded, color: Colors.white), tooltip: 'Add object'),
             IconButton(
               onPressed: () {
                 setState(() => ink.isNotEmpty ? ink.removeLast() : null);
@@ -300,57 +288,4 @@ class _PageEditorState extends State<PageEditor> {
         }),
         icon: Icon(i, color: _tool == tool ? AssimilisBrand.violet : Colors.white70),
       );
-}
-
-class _CanvasPainter extends CustomPainter {
-  final List nodes, conns, ink;
-  final List<Offset>? live;
-  _CanvasPainter(this.nodes, this.conns, this.ink, this.live);
-
-  @override
-  void paint(Canvas c, Size size) {
-    final dot = Paint()..color = Colors.white10;
-    for (var x = 0.0; x < size.width; x += 40) {
-      for (var y = 0.0; y < size.height; y += 40) {
-        c.drawCircle(Offset(x, y), 1, dot);
-      }
-    }
-    final byId = {for (final n in nodes) n['id']: n};
-    final line = Paint()
-      ..color = const Color(0xAAA855F7)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    for (final k in conns) {
-      final a = byId[k['from']], b = byId[k['to']];
-      if (a == null || b == null) continue;
-      final p1 = Offset((a['x'] as num) + (a['w'] as num) / 2, (a['y'] as num) + 30.0);
-      final p2 = Offset((b['x'] as num) + (b['w'] as num) / 2, (b['y'] as num) + 30.0);
-      final dx = (p2.dx - p1.dx).abs() / 2 + 40;
-      // Cubic Bezier: M x1 y1 C cx1 cy1, cx2 cy2, x2 y2
-      c.drawPath(Path()..moveTo(p1.dx, p1.dy)..cubicTo(p1.dx + dx, p1.dy, p2.dx - dx, p2.dy, p2.dx, p2.dy), line);
-      c.drawCircle(p2, 4, Paint()..color = const Color(0xFFA855F7));
-    }
-    void stroke(List<Offset> pts, Color color, double w) {
-      if (pts.length < 2) return;
-      final path = Path()..moveTo(pts.first.dx, pts.first.dy);
-      for (final o in pts.skip(1)) {
-        path.lineTo(o.dx, o.dy);
-      }
-      c.drawPath(path, Paint()
-        ..color = color
-        ..strokeWidth = w
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke);
-    }
-
-    for (final s in ink) {
-      stroke([for (final q in (s['points'] as List)) Offset((q[0] as num).toDouble(), (q[1] as num).toDouble())],
-          Color((s['color'] ?? 0xFFA855F7) as int), ((s['w'] ?? 3) as num).toDouble());
-    }
-    if (live != null) stroke(live!, AssimilisBrand.violet, 3);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

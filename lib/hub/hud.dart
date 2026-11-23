@@ -286,9 +286,9 @@ class _Radar extends CustomPainter {
 class HudChip extends StatelessWidget {
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final IconData? icon;
-  const HudChip(this.label, {super.key, required this.selected, required this.onTap, this.icon});
+  const HudChip(this.label, {super.key, this.selected = false, required this.onTap, this.icon});
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(right: 6),

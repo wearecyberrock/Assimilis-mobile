@@ -108,23 +108,27 @@ class HermesLink {
   void newConversation() => _sessionId = null;
 
   /// Send a turn to Hermes and collect the streamed reply.
-  Future<String> chat(String message, {void Function(String)? onDelta}) async {
+  /// [fresh] runs the turn in a new Hermes conversation (used by the model gateway for other agents), leaving A's
+  /// own conversation alone. [modelOverride] picks a Hermes model for this turn only.
+  Future<String> chat(String message, {void Function(String)? onDelta, bool fresh = false, String? modelOverride}) async {
     final base = await url;
-    if (_sessionId == null) {
-      final r = await _post('/api/session/new', {'title': 'Assimilis Mobile'});
+    String? sid = fresh ? null : _sessionId;
+    if (sid == null) {
+      final r = await _post('/api/session/new', {'title': fresh ? 'Assimilis Mobile · agent' : 'Assimilis Mobile'});
       final d = jsonDecode(r.body);
-      _sessionId = d['session']?['session_id'] ?? d['session_id'] ?? d['id'];
-      if (_sessionId == null) throw Exception('Hermes did not start a session (${r.statusCode}).');
+      sid = d['session']?['session_id'] ?? d['session_id'] ?? d['id'];
+      if (sid == null) throw Exception('Hermes did not start a session (${r.statusCode}).');
+      if (!fresh) _sessionId = sid;
     }
-    final m = await model;
+    final m = (modelOverride != null && modelOverride.isNotEmpty) ? modelOverride : await model;
     final start = await _post('/api/chat/start', {
-      'session_id': _sessionId,
+      'session_id': sid,
       'message': message,
       if (m.isNotEmpty) 'model': m,
     });
     if (start.statusCode >= 400) throw Exception('Hermes: ${start.body.length > 200 ? start.body.substring(0, 200) : start.body}');
-    final sid = jsonDecode(start.body)['stream_id'];
-    final req = http.Request('GET', Uri.parse('$base/api/chat/stream?stream_id=$sid'))..headers.addAll(_headers(base, json: false));
+    final streamId = jsonDecode(start.body)['stream_id'];
+    final req = http.Request('GET', Uri.parse('$base/api/chat/stream?stream_id=$streamId'))..headers.addAll(_headers(base, json: false));
     final res = await _c.send(req).timeout(const Duration(seconds: 30));
     final out = StringBuffer();
     String event = 'message';

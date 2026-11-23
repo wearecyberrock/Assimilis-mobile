@@ -4,11 +4,13 @@ import '../../hub/brand.dart';
 import '../../hub/hud.dart';
 import 'hes_engine.dart';
 import 'hes_store.dart';
+import 'hes_system_tabs.dart';
 
-/// HES: Human Efficiency System, in the web HES style.
-/// Tabs: Status · Quests · Modules · Abilities · Log · Evolution.
+/// HES: Human Efficiency System, run by the System (an AI brain that adapts to you).
+/// Tabs: System · Status · Quests · Story · Data · Modules · Abilities · Log · Evolution.
 class HesView extends StatefulWidget {
-  const HesView({super.key});
+  const HesView({super.key, this.initialTab = 'system'});
+  final String initialTab;
   @override
   State<HesView> createState() => _HesViewState();
 }
@@ -20,11 +22,14 @@ class _HesViewState extends State<HesView> {
   List<Map<String, dynamic>> _quests = [];
   final _log = TextEditingController();
   String? _toast;
-  String _tab = 'status';
+  late String _tab = widget.initialTab;
 
   static const tabs = {
+    'system': Icons.terminal_rounded,
     'status': Icons.radar_rounded,
     'quests': Icons.flag_rounded,
+    'story': Icons.auto_stories_rounded,
+    'data': Icons.sensors_rounded,
     'modules': Icons.tune_rounded,
     'abilities': Icons.auto_awesome_rounded,
     'log': Icons.list_alt_rounded,
@@ -73,6 +78,9 @@ class _HesViewState extends State<HesView> {
                 child: RefreshIndicator(
                   onRefresh: _refresh,
                   child: ListView(padding: const EdgeInsets.fromLTRB(14, 6, 14, 32), children: switch (_tab) {
+                    'system' => [SystemFeedTab(onChanged: _refresh)],
+                    'story' => [const StoryTab()],
+                    'data' => [const PhoneDataTab()],
                     'quests' => _questsTab(),
                     'modules' => _modulesTab(),
                     'abilities' => _abilitiesTab(s),
@@ -214,6 +222,7 @@ class _HesViewState extends State<HesView> {
 
   // ---------------- Quests
   List<Widget> _questsTab() => [
+        SystemQuestList(onChanged: _refresh),
         const HudHeader('Daily quests'),
         for (final q in _quests) _questTile(q),
         if (_quests.isEmpty) const HudNote('No quests. Pick trackers in MODULES.'),

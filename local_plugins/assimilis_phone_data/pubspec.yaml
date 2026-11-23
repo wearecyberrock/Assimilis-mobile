@@ -1,0 +1,19 @@
+name: assimilis_phone_data
+description: Phone data for Assimilis HES and agents (next alarm, screen time, calendars, last location).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.4.0
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.assimilis.phone_data
+        pluginClass: PhoneDataPlugin

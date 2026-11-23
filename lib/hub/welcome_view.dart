@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../assimilis/links/chatgpt_auth.dart';
+import '../assimilis/links/chatgpt_sign_in.dart';
 import '../assimilis/links/hermes_link.dart';
 import '../assimilis/links/shared_providers.dart';
 import '../assimilis/settings.dart';
@@ -40,7 +41,8 @@ class _WelcomeViewState extends State<WelcomeView> {
           await SharedProviders.save({'openrouter': {'key': _key.text.trim(), 'model': ''}}, 'openrouter', c);
           await s.setBlob('brain', 'auto');
         case 'chatgpt':
-          await ChatGptAuth.instance.signIn();
+          final r = await signInWithChatGpt(context);
+          if (r == null || !await ChatGptAuth.instance.signedIn) throw Exception('ChatGPT sign-in was not finished.');
           await s.setBlob('brain', 'chatgpt');
         case 'hermes':
           await HermesLink.instance.configure(_hUrl.text, _hPw.text);

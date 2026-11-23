@@ -32,7 +32,7 @@ if (file("google-services.json").exists()) {
 
 android {
     namespace = "com.assimilis.mobile"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37 // Health Connect (health plugin) needs API 37 to compile; targetSdk is unchanged
     ndkVersion = flutter.ndkVersion
 
     packaging {

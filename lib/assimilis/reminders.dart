@@ -71,9 +71,19 @@ class Reminders {
   }
 
   /// Schedule a reminder notification. Returns a confirmation sentence.
+  /// Id of the reminder [add] made last (HES links its quests to reminders with it).
+  int? lastAddedId;
+
+  /// A notification right now (the HES System's messages).
+  Future<void> notifyNow(String title, String body) async {
+    await init();
+    await _n.show(DateTime.now().millisecondsSinceEpoch.remainder(1 << 30), title, body, const NotificationDetails(android: _channel));
+  }
+
   Future<String> add(String title, DateTime at, {String repeat = 'none', String source = 'you'}) async {
     await init();
     final id = DateTime.now().millisecondsSinceEpoch.remainder(1 << 30);
+    lastAddedId = id;
     final r = Reminder(id: id, title: title, at: at, repeat: repeat, source: source);
     final when = tz.TZDateTime.from(at, tz.local);
     final android = await _n
@@ -81,7 +91,7 @@ class Reminders {
     final exact = await android?.canScheduleExactNotifications() ?? false;
     await _n.zonedSchedule(
       id,
-      'Assimilis reminder',
+      source == 'hes' ? 'SYSTEM' : 'Assimilis reminder',
       title,
       when,
       const NotificationDetails(android: _channel),

@@ -3,11 +3,29 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/agent_action.dart';
+import '../../assimilis/tools.dart';
 
 class AiResponse {
   final String content;
   final int totalTokens;
   AiResponse(this.content, this.totalTokens);
+}
+
+/// Assimilis tools for the Phone Agent: HES (quests, rewards, the System), calendar, health, location, reminders,
+/// notes and web reach, called with the assimilis_tool action.
+String assimilisToolsPrompt() {
+  final lines = [
+    for (final t in AssimilisTools.schemas)
+      if (!const {'phone_task'}.contains((t['function'] as Map)['name']))
+        '- ${(t['function'] as Map)['name']}(${(((t['function'] as Map)['parameters'] as Map?)?['properties'] as Map? ?? const {}).keys.join(', ')}): ${(t['function'] as Map)['description']}'
+  ];
+  return '''
+
+ASSIMILIS TOOLS (HES, calendar, health, location, reminders, notes, web):
+- assimilis_tool: {"tool": "tool_name", "args": {...}} - runs one of these and shows you the result:
+${lines.join('\n')}
+Use assimilis_tool for HES quests and rewards, reminders, calendar events, health and location questions.
+''';
 }
 
 class AiService {
@@ -223,7 +241,7 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
 
     try {
       // Build the prompt including system instructions
-      final systemPrompt = isAgentMode ? _systemPrompt : _chatSystemPrompt;
+      final systemPrompt = isAgentMode ? '$_systemPrompt${assimilisToolsPrompt()}' : _chatSystemPrompt;
       final messages = [
         if (_useSystemPrompt) {'role': 'system', 'content': systemPrompt},
         ..._conversationHistory,
@@ -335,7 +353,7 @@ Answer questions, explain concepts, brainstorm, write emails/messages, and chat 
     }
 
     try {
-      final systemPrompt = isAgentMode ? _systemPrompt : _chatSystemPrompt;
+      final systemPrompt = isAgentMode ? '$_systemPrompt${assimilisToolsPrompt()}' : _chatSystemPrompt;
       final messages = [
         if (_useSystemPrompt) {'role': 'system', 'content': systemPrompt},
         ..._conversationHistory,

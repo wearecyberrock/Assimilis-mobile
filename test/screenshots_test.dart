@@ -8,15 +8,21 @@ import 'package:assimilis_mobile/assimilis/canvas/notes_store.dart';
 import 'package:assimilis_mobile/assimilis/canvas/page_editor.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_store.dart';
 import 'package:assimilis_mobile/assimilis/hes/hes_view.dart';
+import 'package:assimilis_mobile/assimilis/hes/hes_system.dart';
+import 'package:assimilis_mobile/assimilis/hes/hes_questionnaire_view.dart';
 import 'package:assimilis_mobile/assimilis/links/links_view.dart';
 import 'package:assimilis_mobile/assimilis/reach/reach_view.dart';
 import 'package:assimilis_mobile/assimilis/reminders_view.dart';
+import 'package:assimilis_mobile/assimilis/sync/qr_connect_view.dart';
+import 'package:assimilis_mobile/assimilis/uwi/vle_view.dart';
+import 'package:assimilis_mobile/assimilis/whatsapp/whatsapp_view.dart';
 import 'package:assimilis_mobile/hub/permissions_view.dart';
 import 'package:assimilis_mobile/hub/welcome_view.dart';
 import 'package:assimilis_mobile/assimilis/voice/voice_mode_view.dart';
 import 'package:assimilis_mobile/hub/brand.dart';
 import 'package:assimilis_mobile/hub/core_orb.dart';
 import 'package:assimilis_mobile/hub/hub_view.dart';
+import 'package:assimilis_mobile/hub/shell_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,7 +43,10 @@ Future<void> _fonts() async {
   await load('JetBrainsMono', ['assets/fonts/JetBrainsMono-400.ttf', 'assets/fonts/JetBrainsMono-600.ttf', 'assets/fonts/JetBrainsMono-700.ttf']);
   await load('Inter', ['assets/fonts/Inter-400.ttf', 'assets/fonts/Inter-600.ttf', 'assets/fonts/Inter-700.ttf']);
   await load('Roboto', ['assets/fonts/Inter-400.ttf']);
-  final root = Platform.environment['FLUTTER_ROOT'] ?? 'C:/Users/shaki/flutter';
+  final envRoot = Platform.environment['FLUTTER_ROOT'];
+  final root = envRoot != null && envRoot.isNotEmpty
+      ? envRoot
+      : (Directory('/opt/flutter').existsSync() ? '/opt/flutter' : 'C:/Users/shaki/flutter');
   await load('MaterialIcons', ['$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf']);
 }
 
@@ -59,6 +68,8 @@ void _mockChannels() {
         return null;
     }
   });
+  // permission_handler: report every permission as granted (1) so the Safety page renders.
+  m.setMockMethodCallHandler(const MethodChannel('flutter.baseflow.com/permissions/methods'), (c) async => c.method == 'checkPermissionStatus' ? 1 : null);
   m.setMockMethodCallHandler(const MethodChannel('flutter_timezone'), (c) async => 'America/Jamaica');
   for (final ch in ['xyz.luan/audioplayers.global', 'xyz.luan/audioplayers.global/events', 'xyz.luan/audioplayers']) {
     m.setMockMethodCallHandler(MethodChannel(ch), (c) async => null);
@@ -120,11 +131,33 @@ void main() {
         }
       }
       await NotesStore.instance.load();
+      final sys = HesSystem.instance;
+      if ((await sys.quests()).isEmpty) {
+        final now = DateTime.now();
+        await sys.setAnswers({'name': 'Sam', 'wake_time': '06:30'});
+        await sys.issue(title: 'Wake before 6:30', type: 'daily', due: now.add(const Duration(hours: 9)), repeat: 'daily', silent: true);
+        await sys.issue(title: 'Pushups: 40', module: 'pushups', target: 40, unit: 'reps', type: 'daily', due: now.add(const Duration(hours: 6)), silent: true);
+        await sys.issue(title: 'Revise Organic Chemistry for 45 min', detail: 'Exam on Friday. Chapters 4 and 5.', type: 'urgent', due: now.add(const Duration(hours: 3)), silent: true);
+        final first = await sys.issue(title: 'Drink 2 L of water', type: 'side', silent: true);
+        await sys.complete(first['id']);
+        await sys.post('Your sleep was 5.2 h. Recovery is part of training. Lights out by 23:00 tonight.', kind: 'tip', silent: true);
+        await sys.askUser('Your calendar shows an exam on Friday. How ready do you feel?', options: ['Ready', 'Halfway', 'Not at all']);
+        await sys.addChapter('Chapter 1: The Awakening', 'Before dawn, a window opened in front of Sam. The System had chosen. Thirty push-ups later, the first quest was cleared.');
+      }
     });
   });
 
   testWidgets('hub', (t) => _shot(t, const HubView(), '01_hub'));
-  testWidgets('hes', (t) => _shot(t, const HesView(), '02_hes_status'));
+  testWidgets('shell hes', (t) => _shot(t, const AppShell(), '10_shell_hes'));
+  testWidgets('shell agents', (t) => _shot(t, const AppShell(initial: 2), '11_shell_agents'));
+  testWidgets('shell team', (t) => _shot(t, const AppShell(initial: 3), '12_shell_team'));
+  testWidgets('shell settings', (t) => _shot(t, const AppShell(initial: 4), '13_shell_settings'));
+  testWidgets('hes', (t) => _shot(t, const HesView(initialTab: 'status'), '02_hes_status'));
+  testWidgets('hes system', (t) => _shot(t, const HesView(), '14_hes_system'));
+  testWidgets('hes quests', (t) => _shot(t, const HesView(initialTab: 'quests'), '15_hes_quests'));
+  testWidgets('hes story', (t) => _shot(t, const HesView(initialTab: 'story'), '16_hes_story'));
+  testWidgets('hes data', (t) => _shot(t, const HesView(initialTab: 'data'), '17_hes_data', settle: const Duration(seconds: 9)));
+  testWidgets('hes awakening', (t) => _shot(t, const HesQuestionnaireView(), '18_hes_awakening'));
   testWidgets('voice', (t) => _shot(t, const VoiceModeView(introduce: false), '03_voice_A'));
   testWidgets('canvas', (t) => _shot(t, const CanvasView(), '04_canvas'));
   testWidgets('page', (t) async {
@@ -140,6 +173,9 @@ void main() {
   testWidgets('safety', (t) => _shot(t, const PermissionsView(), '09_safety'));
   testWidgets('welcome', (t) => _shot(t, const WelcomeView(), '00_welcome'));
   testWidgets('links', (t) => _shot(t, const LinksView(), '07_models_links'));
+  testWidgets('vle', (t) => _shot(t, const VleView(), '19_vle'));
+  testWidgets('qr connect', (t) => _shot(t, const QrConnectView(), '20_qr_connect'));
+  testWidgets('whatsapp', (t) => _shot(t, const WhatsAppView(), '21_whatsapp'));
 
   testWidgets('app icon', (t) async {
     final b = TestWidgetsFlutterBinding.instance;

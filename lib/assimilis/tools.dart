@@ -7,8 +7,13 @@ import 'a2a/a2a.dart';
 import 'canvas/maths.dart';
 import 'canvas/notes_store.dart';
 import 'hes/hes_store.dart';
+import 'hes/hes_system.dart';
+import 'hes/phone_signals.dart';
+import 'hes/hes_food.dart';
 import 'reach/agent_reach.dart';
 import 'reminders.dart';
+import 'uwi/vle_client.dart';
+import 'whatsapp/whatsapp_link.dart';
 
 /// Tools the Assimilis brain (Jarvis) can call. OpenAI function-calling schemas + handlers.
 class AssimilisTools {
@@ -26,7 +31,8 @@ class AssimilisTools {
   static final schemas = [
     _fn('set_alarm', 'Set a real alarm in the phone\'s Clock app.', {'hour': _n, 'minute': _n, 'label': _s}, ['hour', 'minute']),
     _fn('set_timer', 'Start a countdown timer in the Clock app.', {'seconds': _n, 'label': _s}, ['seconds']),
-    _fn('set_reminder', 'Schedule a reminder notification. when = ISO 8601 local time. repeat: none|daily|weekly|weekdays.',
+    _fn('set_reminder',
+        'Schedule a reminder (through HES: wake-up, study and training become quests; others stay reminders that pay a little when done). when = ISO 8601 local time. repeat: none|daily|weekly|weekdays.',
         {'title': _s, 'when': _s, 'repeat': _s}, ['title', 'when']),
     _fn('list_reminders', 'List upcoming reminders with their ids.', {}),
     _fn('cancel_reminder', 'Cancel a reminder by id.', {'id': _n}, ['id']),
@@ -36,12 +42,26 @@ class AssimilisTools {
     _fn('search_notes', 'Search Canvas notes; returns titles, ids and snippets.', {'query': _s}, ['query']),
     _fn('read_note', 'Read a Canvas page by id.', {'id': _s}, ['id']),
     _fn('append_note', 'Append markdown to an existing Canvas page by id.', {'id': _s, 'content': _s}, ['id', 'content']),
+    _fn('canvas_read',
+        'Read the infinite Canvas: all books, rich objects (notes, coded graphs, media, video, sound, code) and connection lines, or zoom into one book or page.',
+        {'book': _s, 'page_id': _s, 'query': _s}),
+    _fn('canvas_add_object',
+        'Place an object on the infinite Canvas (or a page canvas) and optionally connect it to another book or object. kind: note|graph|media|video|sound|code.',
+        {
+          'kind': _s,
+          'title': _s,
+          'content': _s,
+          'functions': _s,
+          'uri': _s,
+          'language': _s,
+          'connect_to': _s,
+          'connect_label': _s,
+          'page_id': _s,
+        },
+        ['kind']),
     _fn('calculate', 'Evaluate a maths expression exactly (supports sqrt, sin, cos, tan, ln, log, ^, pi, e).', {'expression': _s}, ['expression']),
     _fn('derivative', 'Symbolic derivative with respect to x.', {'expression': _s}, ['expression']),
     _fn('integral', 'Numeric definite integral of f(x) from a to b.', {'expression': _s, 'a': _n, 'b': _n}, ['expression', 'a', 'b']),
-    _fn('hes_log', 'Log a HES activity in plain words, e.g. "30 pushups", "studied 45 min", "slept 7 h".', {'text': _s}, ['text']),
-    _fn('hes_status', 'HES level, rank, class, power, XP, coins and open quests.', {}),
-    _fn('hes_quests', 'Today\'s HES quests with progress.', {}),
     _fn('web_search', 'Search the web (Agent Reach / Exa).', {'query': _s}, ['query']),
     _fn('read_url', 'Read a web page, GitHub repo, YouTube video (captions) or Reddit thread as text.', {'url': _s}, ['url']),
     _fn('github', 'GitHub repo info + README ("owner/repo") or a repo search.', {'query': _s}, ['query']),
@@ -52,16 +72,26 @@ class AssimilisTools {
         {'device': _s, 'message': _s, 'skill': _s}, ['device', 'message']),
     _fn('phone_task', 'Operate the phone screen to do a multi-step job in other apps (open apps, tap, type, scroll). '
         'Risky steps ask the owner on screen unless Full allow is on.', {'task': _s}, ['task']),
+    // HES: every agent can drive the System.
+    ...HesSystem.schemas,
+    // Phone data: calendars, health, location history, screen time, next alarm.
+    ...PhoneSignals.schemas,
+    ...HesFood.schemas,
+    // Multi-user encrypted UWI Mona VLE scanner and WhatsApp agent messaging.
+    ...VleClient.schemas,
+    ...WhatsAppLink.schemas,
   ];
 
   static String statusFor(String name) => switch (name) {
         'set_alarm' => 'Setting an alarm…',
         'set_timer' => 'Starting a timer…',
         'set_reminder' => 'Setting a reminder…',
-        'create_note' || 'append_note' => 'Writing to Canvas…',
-        'search_notes' || 'read_note' => 'Checking your notes…',
+        'create_note' || 'append_note' || 'canvas_add_object' => 'Writing to Canvas…',
+        'search_notes' || 'read_note' || 'canvas_read' => 'Reading Canvas…',
         'calculate' || 'derivative' || 'integral' => 'Calculating…',
-        'hes_log' || 'hes_status' || 'hes_quests' => 'Updating HES…',
+        _ when name.startsWith('hes_') => 'Updating HES…',
+        'vle_accounts' || 'vle_scan' => 'Scanning UWI Mona VLE…',
+        'whatsapp_send' => 'Sending WhatsApp message…',
         'web_search' => 'Searching the web…',
         'read_url' || 'github' || 'reddit' || 'rss' => 'Reading…',
         'phone_task' => 'Working on your phone…',
@@ -75,6 +105,11 @@ class AssimilisTools {
     try {
       final r = Reminders.instance;
       final notes = NotesStore.instance;
+      if (HesSystem.handles(name)) return await HesSystem.runTool(name, a, by: 'A');
+      if (PhoneSignals.handles(name)) return await PhoneSignals.runTool(name, a);
+      if (name == 'hes_food_log' || name == 'hes_food_today') return await HesFood.runTool(name, a);
+      if (VleClient.handles(name)) return await VleClient.runTool(name, a);
+      if (WhatsAppLink.handles(name)) return await WhatsAppLink.runTool(name, a);
       switch (name) {
         case 'set_alarm':
           return await r.alarm(_num(a['hour']).toInt(), _num(a['minute']).toInt(), label: a['label']);
@@ -83,7 +118,7 @@ class AssimilisTools {
         case 'set_reminder':
           final when = DateTime.tryParse('${a['when']}');
           if (when == null) return 'Could not read the time "${a['when']}". Use ISO 8601.';
-          return await r.add('${a['title']}', when, repeat: '${a['repeat'] ?? 'none'}', source: 'jarvis');
+          return await HesSystem.instance.remind('${a['title']}', when, repeat: '${a['repeat'] ?? 'none'}', source: 'A');
         case 'list_reminders':
           final list = await r.list();
           return list.isEmpty
@@ -112,8 +147,7 @@ class AssimilisTools {
           await notes.load();
           final f = notes.find('${a['id']}');
           if (f == null) return 'No page with id ${a['id']}.';
-          return '# ${f.page['title']}\n${f.page['text']}\n'
-              '${(f.page['nodes'] as List).map((n) => '- card: ${n['text']}').join('\n')}';
+          return notes.readCanvas(pageId: '${a['id']}');
         case 'append_note':
           await notes.load();
           final f = notes.find('${a['id']}');
@@ -121,20 +155,59 @@ class AssimilisTools {
           f.page['text'] = '${f.page['text']}\n\n${a['content']}';
           await notes.touch(f.page);
           return 'Added to "${f.page['title']}".';
+        case 'canvas_read':
+          await notes.load();
+          return notes.readCanvas(
+            bookQuery: a['book']?.toString(),
+            pageId: a['page_id']?.toString(),
+            query: a['query']?.toString(),
+          );
+        case 'canvas_add_object':
+          await notes.load();
+          final kind = '${a['kind'] ?? 'note'}'.toLowerCase().trim();
+          Map? targetPage;
+          if (a['page_id'] != null && '${a['page_id']}'.trim().isNotEmpty) {
+            targetPage = notes.find('${a['page_id']}')?.page;
+            if (targetPage == null) return 'No Canvas page with id "${a['page_id']}".';
+          }
+          final extra = <String, dynamic>{};
+          if (kind == 'graph') {
+            final fns = '${a['functions'] ?? a['content'] ?? 'sin(x)'}'
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+            extra['functions'] = fns;
+            if (a['content'] != null) extra['code'] = '${a['content']}';
+          } else if (kind == 'code') {
+            extra['language'] = '${a['language'] ?? 'code'}';
+            extra['code'] = '${a['content'] ?? ''}';
+          } else if (kind == 'media' || kind == 'video' || kind == 'sound') {
+            extra['uri'] = '${a['uri'] ?? ''}'.trim();
+          }
+          final obj = await notes.addBoardObject(
+            kind: kind,
+            title: '${a['title'] ?? ''}'.trim(),
+            text: '${a['content'] ?? ''}',
+            extra: extra,
+            page: targetPage,
+          );
+          String linkMsg = '';
+          final connectTo = '${a['connect_to'] ?? ''}'.trim();
+          if (connectTo.isNotEmpty && targetPage == null) {
+            final other = notes.findBoardItem(connectTo);
+            if (other != null) {
+              await notes.addBoardConnector('${other['id']}', '${obj['id']}', label: a['connect_label']?.toString());
+              linkMsg = ' and connected to ${other['name'] ?? other['title'] ?? other['id']}';
+            }
+          }
+          return 'Placed $kind object "${obj['title']}" (${obj['id']}) on Canvas$linkMsg.';
         case 'calculate':
           return '${a['expression']} = ${Maths.calc('${a['expression']}')}';
         case 'derivative':
           return 'd/dx ${a['expression']} = ${Maths.derive('${a['expression']}')}';
         case 'integral':
           return Maths.integrate('${a['expression']}', _num(a['a']).toDouble(), _num(a['b']).toDouble());
-        case 'hes_log':
-          return await HesStore.instance.quickLog('${a['text']}', source: 'jarvis') ??
-              'No HES tracker matched "${a['text']}".';
-        case 'hes_status':
-          return await HesStore.instance.status();
-        case 'hes_quests':
-          final q = await HesStore.instance.quests();
-          return q.map((x) => '${x['claimed'] == true ? '✔' : '•'} ${x['title']} (${x['done']}/${x['target']})').join('\n');
         case 'web_search':
           return await AgentReach.search('${a['query']}');
         case 'read_url':
