@@ -60,6 +60,8 @@ void _mockChannels() {
         return null;
     }
   });
+  // permission_handler: report every permission as granted (1) so the Safety page renders.
+  m.setMockMethodCallHandler(const MethodChannel('flutter.baseflow.com/permissions/methods'), (c) async => c.method == 'checkPermissionStatus' ? 1 : null);
   m.setMockMethodCallHandler(const MethodChannel('flutter_timezone'), (c) async => 'America/Jamaica');
   for (final ch in ['xyz.luan/audioplayers.global', 'xyz.luan/audioplayers.global/events', 'xyz.luan/audioplayers']) {
     m.setMockMethodCallHandler(MethodChannel(ch), (c) async => null);
