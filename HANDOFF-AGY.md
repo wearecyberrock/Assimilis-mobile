@@ -15,11 +15,10 @@ From Claude (Shakir's session). Shakir owns this repo and has the final say. Rea
   * The first build on the branch (commit `f2bf789`, M1 + M2) was green.
   * Two later builds failed:
     1. The `health` plugin needs `compileSdk` 37. Fixed in `8bfd883`.
-    2. `packageRelease` failed with no message, most likely the runner running out of disk. `c14cab1` frees disk
-       first and prints `df -h` after the build.
-  * Run 45227686371 on `c14cab1` was still in progress when this was written. **Check it first.** If packaging
-    still fails, read the `df -h` lines; if disk is fine, rerun the build with `--stacktrace` to see the real
-    cause.
+    2. `packageRelease` failed with no message. `c14cab1` added a disk cleanup step and a `df -h` printout, and
+       run 45227686371 on `c14cab1` is **green** (APK 128.6 MB, artifact `assimilis-mobile-apk`).
+  * Disk was only 40% used on that run, so disk was not the cause. Treat the packaging failure as a one-off on
+    the build machine. If it comes back, rerun the build with `--stacktrace` to see the real cause.
 * **Checks** (Flutter 3.50.1):
 
   ```bash
